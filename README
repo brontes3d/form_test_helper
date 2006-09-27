@@ -1,0 +1,34 @@
+FormTestHelper
+==============
+* Requires EdgeRails or the assert_select plugin.
+
+This plugin uses +assert_select+ to verify and manipulate your forms.  It solves the problem we've 
+all run into where you change the form but the test doesn't break because you're doing this in 
+the test:
+  post :create, :name => 'Pickaxe', :category => 1, :out_of_print => 0
+  assert_response :success
+
+Instead, work with the form directly!
+  form = select_form                 # or select by dom_id or url if multiple forms on the page
+  form['name'] = 'Pickaxe'
+  form['category'].options           =>   [['Programming', '1'], ['Self-help', '2'], ...]
+  form['category'] = "Programming"   # Can set using the option label or the option value
+  form['out_of_print'].check         # Check the checkbox
+  form.submit
+  assert_response :success
+  
+...or simply:
+  select_form.submit :name => 'Pickaxe', :category => 'Programming', :out_of_print => false
+  
+What's the benefit of this over post :create...?  It uses the action of the form, it verifies that the form and the fields you specify are present and not misspelled, and it preserves any hidden or default values that may be in the form.
+  
+Features:
+  * Can select_form by dom_id or url, or call without arguments if there's only one form
+  * Specifying a field name that doesn't exist raises an exception
+  * Fields that are selects (dropdowns) won't let you set a value that's not in its options
+  * Works with RESTful links and forms - :method => :put, :delete...
+  * Checks for the presence of a submit button when you submit the form
+  * Works in functional and integration tests
+  * You can pass submit a hash and it will update the form accordingly.  Submitting a form with
+    new values can be as simple as: 
+      select_form.submit {:username => 'bob', :password => 'opensesame'}

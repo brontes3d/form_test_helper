@@ -1,0 +1,407 @@
+require File.join(File.dirname(__FILE__), "test_helper")
+
+class SelectFormTest < Test::Unit::TestCase
+  include ActionView::Helpers::FormTagHelper
+  include ActionView::Helpers::TagHelper
+    
+  def setup
+    @controller = TestController.new
+    @request    = ActionController::TestRequest.new
+    @response   = ActionController::TestResponse.new
+  end
+  
+  def test_select_form
+    render_html %Q{<form id="test"></form>}
+    assert_select "form#?", "test"
+    form = select_form "test"
+    assert_equal FormTestHelper::Form, form.class
+    
+    assert_raise(Test::Unit::AssertionFailedError) do
+      select_form 'nonexistent'
+    end
+  end
+  
+  def test_select_form_when_enclosed
+    render_html %Q{<div><form id="test"></form></div>}
+    select_form "test"
+  end
+  
+  def test_select_form_by_action
+    render_html %Q{<form action="/test"></form>}
+    select_form "/test"
+  end
+  
+  def test_select_only_form
+    render_html %Q{<form></form>}
+    select_form
+  
+    render_html %Q{<form id="one"></form><form id="two"></form>}
+    assert_raise(Test::Unit::AssertionFailedError) { select_form }
+  end
+  
+  def test_selected_form_submits_to_action
+    render_rhtml %Q{<%= form_tag({:action => 'create'}) + submit_tag + end_form_tag %>}
+    form = select_form "/test/create"
+    form.submit
+    assert_action_name :create
+    assert_equal :post, @request.method
+  end
+  
+  def test_selected_form_submits_to_self_when_no_action
+    render_html %Q{<form id="self"></form>}
+    form = select_form "self"
+    
+    @controller.response_with = "Form submitted."
+    form.submit_without_clicking_button
+    assert_action_name :html
+    assert_equal "Form submitted.", @response.body
+    assert_equal :get, @request.method # Firefox uses GET when no method specified
+  end
+  
+  def test_selected_form_submits_with_restful_request_method
+    render_rhtml %Q{<%= form_tag({:action => "destroy"}, {:method => :delete}) %></form>}
+    form = select_form "/test/destroy"
+    form.submit_without_clicking_button
+    assert_response :success
+    assert_action_name :destroy
+    assert_equal :delete, @request.method
+  end
+  
+  def test_submit_to_another_controller
+    render_rhtml <<-EOD
+      <%= form_tag(:controller => 'other') %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    assert_raise(RuntimeError) { select_form.submit }
+  end
+  
+  def test_reset_form
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "text", "1" %>
+      </form>
+    EOD
+    form = select_form
+    form['text'] = '2'
+    assert_equal '2', form['text'].value
+    form.reset
+    assert_equal '1', form['text'].value
+  end
+  
+  def test_reset_field
+    render_rhtml <<-EOD
+      <%= form_tag %>
+      <%= check_box_tag "checkbox", "1", false %>
+        <%= text_field_tag "text", "0" %>
+      </form>
+    EOD
+    form = select_form
+    form['text'] = '1'
+    form['checkbox'] = '1'
+    assert_equal '1', form['text'].value
+    assert_equal '1', form['checkbox'].value
+    form['text'].reset
+    assert_equal '0', form['text'].value
+    assert_equal '1', form['checkbox'].value
+  end
+  
+  def test_field_passes_methods_to_tag
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "name", "Jason", :class => 'field' %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal "field", form['name'].attributes['class']
+  end
+  
+  def test_fields
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_area_tag "textarea", "value" %>
+        <span><%= text_field_tag "text", "value" %></span>
+        <%= select_tag "people", "<option>Jason</option>" %>
+        <button name="submit">Submit</button>
+        
+        <hr>
+        <input />
+        <textarea></textarea>
+        <div>&nbsp;</div>
+      </form>
+    EOD
+    form = select_form
+    assert_equal 4, form.fields.size
+  end
+  
+  def test_missing_field
+    render_rhtml <<-EOD
+      <%= form_tag %></form>
+    EOD
+    assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form['username'] }
+  end
+  
+  def test_missing_field_when_updating_value
+    render_rhtml <<-EOD
+      <%= form_tag %></form>
+    EOD
+    assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form['username'] = 'bob' }
+  end
+  
+  def test_submit
+    value = "jason"
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "#{value}" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    form.submit
+    assert_response :success
+    assert_equal value, @controller.params[:username]
+    assert_equal({"commit"=>"Save changes", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+  end
+  
+  def test_submit_requires_submit_tag
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+      </form>
+    EOD
+    form = select_form
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { form.submit }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <BUTTON name="submit" value="submit" type="submit">Submit</BUTTON>
+      </form>
+    EOD
+    form = select_form
+    assert_nothing_raised { form.submit }
+  end
+  
+  def test_submit_can_take_field_values
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    new_value = 'brent'
+    form.submit :username => new_value
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+  end
+  
+  def test_text_field
+    assert_select_form_works_with "article[name]", "My article" do |name, value|
+      text_field_tag name, value
+    end
+  end
+  
+  def test_text_area
+    assert_select_form_works_with "article[body]", "This is <em>great</em>!" do |name, value|
+      text_area_tag name, value
+    end
+  end
+  
+  def test_hidden_value_is_protected
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <input type="hidden" name="key" value="12345" />
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    assert_raise(TypeError) { form["key"] = "9876" }
+    form["key"].set_value("6789")
+    form.submit
+    assert_response :success
+    assert_equal({"commit"=>"Save changes", "key"=>"6789", "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+  end
+  
+  def test_checkbox_tag
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <input type="checkbox" name="ok" value="1" />
+      </form>
+    EOD
+    form = select_form
+    form.submit_without_clicking_button
+    assert_nil @controller.params["ok"] # Checkboxes are nil when unchecked unless they have a hidden field by the same name
+    
+    form["ok"].check
+    form.submit_without_clicking_button
+    assert_equal "1", @controller.params["ok"]
+  end
+  
+  def test_check_box_takes_boolean_values
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= check_box "article", "published" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    form.submit("article[published]" => true)
+    assert_equal "1", @controller.params["article[published]"]
+    
+    form.submit("article[published]" => false)
+    assert_equal "0", @controller.params["article[published]"]
+  end
+  
+  def test_check_box_prevents_setting_nonexistent_values
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= check_box "article", "published" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    assert_raise(RuntimeError) { form.submit("article[published]" => "a large carrot") }
+  end
+  
+  def test_check_box_initially_checked
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= check_box "article", "written" %>
+      </form>
+    EOD
+    assert_equal true, assigns(:article).written
+    form = select_form
+    form.submit_without_clicking_button
+    assert_equal "1", @controller.params["article[written]"]
+    
+    form["article[written]"].uncheck
+    form.submit_without_clicking_button
+    assert_equal "0", @controller.params["article[written]"]
+  end
+  
+  def test_check_box_unchecked
+    # The check_box_tag helper creates both a checkbox and a hidden field
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= check_box "article", "published" %>
+      </form>
+    EOD
+    assert_equal false, assigns(:article).published
+    form = select_form
+    form.submit_without_clicking_button
+    assert_equal "0", @controller.params["article[published]"]
+    
+    form["article[published]"].check
+    form.submit_without_clicking_button
+    assert_equal "1", @controller.params["article[published]"]
+  end
+  
+  def test_radio_button
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= radio_button_tag "gender", "female", true %>
+        <%= radio_button_tag "gender", "male" %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(female male), form['gender'].options
+    assert_equal 'female', form['gender'].value
+    form['gender'] = 'male'
+    form.submit_without_clicking_button
+    assert_equal 'male', @controller.params['gender']
+  end
+  
+  def test_radio_buttons_when_none_checked
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= radio_button_tag "gender", "female" %>
+        <%= radio_button_tag "gender", "male" %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(female male), form['gender'].options
+    form.submit_without_clicking_button
+    assert_nil @controller.params["gender"]
+  end
+  
+  def test_radio_buttons_when_multiple_checked
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= radio_button_tag "gender", "female", true %>
+        <%= radio_button_tag "gender", "male", true %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(female male), form['gender'].options
+    assert_equal form['gender'].options.last, form['gender'].value
+    form.submit_without_clicking_button
+    assert_equal 'male', @controller.params['gender']
+  end
+  
+  def test_select
+    assert_select_form_works_with("people", "0") do |name, value|
+      select_tag name, %q{<option selected="selected">0</option><option>1</option>}
+    end
+  end
+
+  def test_select_with_multiple_selected
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        #{select_tag 'number[]', %q{<option selected="selected">0</option><option selected="selected">1</option>}, :multiple => true}
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(0 1), form['number[]'].options
+    assert_equal %w(0 1), form['number[]'].value
+    form.submit_without_clicking_button
+    assert_equal %w(0 1), @controller.params['number[]']
+  end
+  
+  def test_select_with_multiple_selected_but_not_allowed
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        #{select_tag 'number', %q{<option selected="selected">0</option><option selected="selected">1</option>}}
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(0 1), form['number'].options
+    assert_equal '1', form['number'].value # Browsers generally pick the last when multiple selected
+  end
+  
+  def test_select_with_labeled_options
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        #{select_tag 'person_id', %q{<option selected="selected" value="1">Jason</option><option value="2">Brent</option>}}
+      </form>
+    EOD
+    form = select_form
+    assert_equal [['Jason', '1'], ['Brent', '2']], form['person_id'].options
+    assert_equal '1', form['person_id'].value
+    form['person_id'] = "Brent"
+    assert_equal '2', form['person_id'].value
+  end
+  
+  protected
+  
+  def assert_select_form_works_with(name, value)
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        #{yield name, value}
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal 2, form.fields.size
+    assert_kind_of(FormTestHelper::Field, form[name])
+    
+    assert_equal value, form[name].initial_value
+    assert_equal value, form[name].value
+    
+    new_value = "1"
+    form[name] = new_value
+    assert_equal new_value, form[name].value
+    form.submit
+    assert_response :success
+    assert_equal({"commit"=>"Save changes", name=>new_value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+  end
+end
