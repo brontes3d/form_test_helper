@@ -251,9 +251,11 @@ module FormTestHelper
     end
   end
   
-  def select_link(text)
+  def select_link(text=nil)
     if css_select(%Q{a[href="#{text}"]}).any?
       links = assert_select("a[href=?]", text)
+    elsif text.nil?
+      links = assert_select('a', 1)
     else
       links = assert_select('a', text)
     end
@@ -307,7 +309,7 @@ module FormTestHelper
     if self.kind_of?(ActionController::IntegrationTest)
       self.send(method, path, params.stringify_keys)
     else
-      params.merge!(ActionController::Routing::Routes.recognize_path(path))
+      params.merge!(ActionController::Routing::Routes.recognize_path(path, :method => method))
       if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_name
         raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
       end
