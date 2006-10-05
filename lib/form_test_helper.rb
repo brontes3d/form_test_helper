@@ -177,6 +177,14 @@ module FormTestHelper
     def options
       tags.collect {|tag| tag['value'] }
     end
+    
+    def value=(value)
+      if options.include?(value)
+        @value = value
+      else
+        raise "Can't set value for #{self.name} that isn't one of the radio buttons."
+      end
+    end
   end
   
   class Select < Field

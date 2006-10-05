@@ -338,6 +338,19 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal 'male', @controller.params['gender']
   end
   
+  def test_radio_buttons_prevent_setting_nonexistent_values
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= radio_button_tag "gender", "female", true %>
+        <%= radio_button_tag "gender", "male" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(female male), form['gender'].options
+    assert_raise(RuntimeError) { form.submit('gender' => "neuter") }
+  end
+  
   def test_select
     assert_select_form_works_with("people", "0") do |name, value|
       select_tag name, %q{<option selected="selected">0</option><option>1</option>}
