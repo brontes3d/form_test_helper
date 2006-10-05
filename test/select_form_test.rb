@@ -381,6 +381,16 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal '2', form['person_id'].value
   end
   
+  def test_select_with_identically_labeled_options
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        #{select_tag 'country', %q{<option selected="selected" value="US">US</option><option value="Canada">Canada</option>}}
+      </form>
+    EOD
+    form = select_form
+    assert_equal ['US', 'Canada'], form['country'].options
+  end
+  
   protected
   
   def assert_select_form_works_with(name, value)

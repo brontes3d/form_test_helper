@@ -231,11 +231,13 @@ module FormTestHelper
     def initialize(select, tag)
       @select, @tag = select, tag
       @initially_selected = tag['selected']
-      if tag['value'] # Like <option value="7">United States</option>
-        @label = tag.children.to_s
-        @value = tag['value']
-      else # Label is nil if like <option>United States</option>
-        @value = tag.children.to_s
+      content = tag.children.to_s
+      value = tag['value']
+      if value && value != content # Like <option value="7">United States</option>
+        @label = content
+        @value = value
+      else # Label is nil if like <option>United States</option> or value == content
+        @value = content
       end
     end
   end
