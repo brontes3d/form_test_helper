@@ -229,7 +229,7 @@ module FormTestHelper
       elsif options_are_labeled? && pair = options.assoc(value) # Value set by label
         @value = pair.last
       else
-        raise "Can't set value for <select> that isn't an <option>."
+        raise "Can't set value for #{self.name} that isn't one of the menu options."
       end
     end
   end
