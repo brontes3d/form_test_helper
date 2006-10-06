@@ -32,3 +32,42 @@ Features:
   * You can pass submit a hash and it will update the form accordingly.  Submitting a form with
     new values can be as simple as: 
       select_form.submit {:username => 'bob', :password => 'opensesame'}
+
+
+
+Bigger example :: Merge in with above later:
+$ ./script/console
+>> irb app
+>> get '/books/1;edit'
+=> 200
+>> form = select_form               # Verifies only 1 form on page and parses it
+                                    # You can also select by id or action
+=> <#FormTestHelper::Form...
+>> form.field_names                 # What fields do we have in our little form?
+=> ["commit", "book[title]", "book[category]", "book[rating]", "_method", "book[classic]"]
+>> form['book[title]'].value
+=> "Pickaxe"
+>> form['book[category]'].value
+=> "Mining"                         # Hmmm.  That can't be right.
+>> form['book[category]'] = 'Ruby'
+RuntimeError: Can't set value for book[category] that isn't one of the menu options.
+>> form['book[category]'].options   # Okay, what are our options?
+=> ["Programming", "Cooking", "Mining"]
+>> form['book[category]'] = 'Programming'
+=> "Programming"
+>> form['book[rating]'] = "Excellent"
+RuntimeError: Can't set value for book[rating] that isn't one of the radio buttons.
+>> form['book[rating]'].options     # We're bad at this game.  What's valid?
+=> ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+>> form['book[rating]'] = '10'
+=> "10"
+>> form['book[classic]'].check      # Definitely one of the greats
+=> "1"
+
+>> form.action                      # Reflect: where will this form submit?
+=> "/books/1"
+>> form.request_method
+=> :put
+
+# TODO: Show form.submit and how all the params from the form are submitted (once the
+bug with recycle! is fixed)
