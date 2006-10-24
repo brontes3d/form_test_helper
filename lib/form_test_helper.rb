@@ -25,6 +25,9 @@ module FormTestHelper
       params = {}
       fields.each {|field| params[field.name] = field.value unless field.value.nil? || params[field.name] } # don't submit the nils and fields already named
       
+      # Convert arrays and hashes in params, since test processing doesn't do this automatically
+      params = CGIMethods::FormEncodedPairParser.new(params).result
+      
       @testcase.make_request(request_method, path, params)
     end
     

@@ -246,10 +246,10 @@ class SelectFormTest < Test::Unit::TestCase
     EOD
     form = select_form
     form.submit("article[published]" => true)
-    assert_equal "1", @controller.params["article[published]"]
+    assert_equal "1", @controller.params["article"]['published']
     
     form.submit("article[published]" => false)
-    assert_equal "0", @controller.params["article[published]"]
+    assert_equal "0", @controller.params["article"]['published']
   end
   
   def test_check_box_prevents_setting_nonexistent_values
@@ -272,11 +272,11 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal true, assigns(:article).written
     form = select_form
     form.submit_without_clicking_button
-    assert_equal "1", @controller.params["article[written]"]
+    assert_equal "1", @controller.params["article"]['written']
     
     form["article[written]"].uncheck
     form.submit_without_clicking_button
-    assert_equal "0", @controller.params["article[written]"]
+    assert_equal "0", @controller.params["article"]["written"]
   end
   
   def test_check_box_unchecked
@@ -289,11 +289,11 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal false, assigns(:article).published
     form = select_form
     form.submit_without_clicking_button
-    assert_equal "0", @controller.params["article[published]"]
+    assert_equal "0", @controller.params["article"]['published']
     
     form["article[published]"].check
     form.submit_without_clicking_button
-    assert_equal "1", @controller.params["article[published]"]
+    assert_equal "1", @controller.params["article"]['published']
   end
   
   def test_radio_button
@@ -367,7 +367,7 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal %w(0 1), form['number[]'].options
     assert_equal %w(0 1), form['number[]'].value
     form.submit_without_clicking_button
-    assert_equal %w(0 1), @controller.params['number[]']
+    assert_equal %w(0 1), @controller.params['number'].first
   end
   
   def test_select_with_multiple_selected_but_not_allowed
@@ -425,6 +425,16 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal new_value, form[name].value
     form.submit
     assert_response :success
-    assert_equal({"commit"=>"Save changes", name=>new_value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+    
+    expected_params = {"commit"=>"Save changes", "action"=>"create", "controller"=>@controller.controller_name}
+    if name =~ /(.*)\[(.*)\]/
+      object = $1
+      method = $2
+      expected_params.merge!(object=>{method => new_value})
+    else
+      expected_params.merge!(name => new_value)
+    end
+    
+    assert_equal(expected_params, @controller.params)
   end
 end
