@@ -40,7 +40,7 @@ class SelectFormTest < Test::Unit::TestCase
   end
   
   def test_selected_form_submits_to_action
-    render_rhtml %Q{<%= form_tag({:action => 'create'}) + submit_tag + end_form_tag %>}
+    render_rhtml %Q{<%= form_tag({:action => 'create'}) + submit_tag + "</form>" %>}
     form = select_form "/test/create"
     form.submit
     assert_action_name :create

@@ -29,11 +29,10 @@ class SelectLinkTest < Test::Unit::TestCase
     select_link '/test'
   end
   
-  # FIXME: This doesn't work because assert_select returns the wrong tag.
-  # def test_select_link_by_contents
-  #   render_rhtml %Q{<a>Create</a><%= link_to 'Destroy', {:action => 'destroy'} %>}
-  #   select_link 'Destroy'
-  # end
+  def test_select_link_by_contents
+    render_rhtml %Q{<a>Create</a>  <%= link_to 'Destroy', {:action => 'destroy'} %>}
+    select_link 'Destroy'
+  end
   
   def test_selected_link_is_followable
     render_rhtml %Q{<%= link_to 'test', {:action => 'index'} %>}

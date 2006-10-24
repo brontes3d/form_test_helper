@@ -9,7 +9,7 @@ class IntegrationTest < ActionController::IntegrationTest
       <%= form_tag(:action => 'create', :method => :post) %>
         <%= text_field_tag 'username', 'jason' %>
         <%= submit_tag %>
-      <% end_form_tag %>
+      </form>
     EOD
   end
 
@@ -24,7 +24,7 @@ class IntegrationTest < ActionController::IntegrationTest
   end
   
   def test_select_link
-    link = select_link '/test'
+    link = select_link 'Index'
     link.follow
     assert_response :success
     assert_action_name :index
