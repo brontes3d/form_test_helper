@@ -202,7 +202,7 @@ module FormTestHelper
       when 1
         selected_options.first.value
       when 0 # If no option is selected, browsers generally use the first
-        options.first
+        @options.first.value
       else
         if tag['multiple']
           selected_options.collect(&:value)

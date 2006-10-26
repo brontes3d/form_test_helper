@@ -383,7 +383,7 @@ class SelectFormTest < Test::Unit::TestCase
   
   def test_select_with_labeled_options
     render_rhtml <<-EOD
-      <%= form_tag %>
+      <%= form_tag(:action => 'create') %>
         #{select_tag 'person_id', %q{<option selected="selected" value="1">Jason</option><option value="2">Brent</option>}}
       </form>
     EOD
@@ -392,6 +392,20 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal '1', form['person_id'].value
     form['person_id'] = "Brent"
     assert_equal '2', form['person_id'].value
+    form.submit_without_clicking_button
+    assert_equal '2', @controller.params['person_id']
+  end
+  
+  def test_select_default_with_labeled_options
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        #{select_tag 'person_id', %q{<option value="1">Jason</option><option value="2">Brent</option>}}
+      </form>
+    EOD
+    form = select_form
+    assert_equal '1', form['person_id'].value
+    form.submit_without_clicking_button
+    assert_equal '1', @controller.params['person_id']
   end
   
   def test_select_with_identically_labeled_options
