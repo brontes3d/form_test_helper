@@ -222,6 +222,8 @@ module FormTestHelper
       end
     end
     
+    # True if options are like <option value="4">Spain</option> rather than
+    # <option>Spain</option> or <option value="Spain">Spain</option>
     def options_are_labeled?
       @options.any? {|option| option.label }
     end
@@ -229,7 +231,7 @@ module FormTestHelper
     def value=(value)
       if options.include?(value)
         @value = value
-      elsif options_are_labeled? && pair = options.assoc(value) # Value set by label
+      elsif options_are_labeled? && pair = options.detect {|option| option.include?(value.to_s) }
         @value = pair.last
       else
         raise "Can't set value for #{self.name} that isn't one of the menu options."

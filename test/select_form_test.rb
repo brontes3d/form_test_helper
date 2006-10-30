@@ -381,7 +381,7 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal '1', form['number'].value # Browsers generally pick the last when multiple selected
   end
   
-  def test_select_with_labeled_options
+  def test_select_with_labeled_options_by_label
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         #{select_tag 'person_id', %q{<option selected="selected" value="1">Jason</option><option value="2">Brent</option>}}
@@ -391,6 +391,19 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal [['Jason', '1'], ['Brent', '2']], form['person_id'].options
     assert_equal '1', form['person_id'].value
     form['person_id'] = "Brent"
+    assert_equal '2', form['person_id'].value
+    form.submit_without_clicking_button
+    assert_equal '2', @controller.params['person_id']
+  end
+  
+  def test_select_with_labeled_options_by_value
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        #{select_tag 'person_id', %q{<option selected="selected" value="1">Jason</option><option value="2">Brent</option>}}
+      </form>
+    EOD
+    form = select_form
+    form['person_id'] = 2
     assert_equal '2', form['person_id'].value
     form.submit_without_clicking_button
     assert_equal '2', @controller.params['person_id']
