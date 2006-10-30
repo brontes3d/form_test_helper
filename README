@@ -1,5 +1,5 @@
-FormTestHelper
-==============
+Form Test Helper
+=====================================
 * Requires EdgeRails or the assert_select plugin.
 
 This plugin uses +assert_select+ to verify and manipulate your forms.  It solves the problem we've 
@@ -23,15 +23,15 @@ Instead, work with the form directly!
 What's the benefit of this over post :create...?  It uses the action of the form, it verifies that the form and the fields you specify are present and not misspelled, and it preserves any hidden or default values that may be in the form.
   
 Features:
-  * Can select_form by dom_id or url, or call without arguments if there's only one form
+  * Can select_form / submit_form by dom_id or url, or call without arguments if there's only one form on the page
   * Specifying a field name that doesn't exist raises an exception
-  * Fields that are selects (dropdowns) won't let you set a value that's not in its options
+  * Fields that are selects (dropdowns) or radio buttons won't let you set a value that's not in its options
+  * Selects can set using the option label or the option value
+  * Enumerate/inspect/assert the options for selects and radio buttons
   * Works with RESTful links and forms - :method => :put, :delete...
   * Checks for the presence of a submit button when you submit the form
-  * Works in functional and integration tests
-  * You can pass submit a hash and it will update the form accordingly.  Submitting a form with
-    new values can be as simple as: 
-      submit_form :username => 'bob', :password => 'opensesame'
+  * Works in functional and integration tests and the console
+  * Assert presence of and follow links
 
 IRB example
 ======================================
