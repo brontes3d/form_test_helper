@@ -13,7 +13,7 @@ Instead, work with the form directly!
     form['name'] = 'Pickaxe'
     form['category'].options         =>   [['Programming', '1'], ['Self-help', '2'], ...]
     form['category'] = "Programming" # Can set using the option label or the option value
-    form['out_of_print'].check       # Check the checkbox
+    form['out_of_print'].uncheck       # Check the checkbox
   end
   assert_response :success
   
@@ -33,9 +33,8 @@ Features:
     new values can be as simple as: 
       submit_form :username => 'bob', :password => 'opensesame'
 
-
-
-Bigger example :: Merge in with above later:
+IRB example
+======================================
 $ ./script/console
 >> irb app
 >> get '/books/1;edit'
@@ -70,4 +69,4 @@ RuntimeError: Can't set value for book[rating] that isn't one of the radio butto
 => :put
 
 # TODO: Show form.submit and how all the params from the form are submitted (once the
-bug with recycle! is fixed)
+bug with recycle! is fixed (Ruby on Rails Ticket #6353))
