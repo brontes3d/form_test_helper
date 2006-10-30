@@ -9,16 +9,16 @@ the test:
   assert_response :success
 
 Instead, work with the form directly!
-  form = select_form                 # or select by dom_id or url if multiple forms on the page
-  form['name'] = 'Pickaxe'
-  form['category'].options           =>   [['Programming', '1'], ['Self-help', '2'], ...]
-  form['category'] = "Programming"   # Can set using the option label or the option value
-  form['out_of_print'].check         # Check the checkbox
-  form.submit
+  submit_form do |form|              # or select by dom_id or url if multiple forms on the page
+    form['name'] = 'Pickaxe'
+    form['category'].options         =>   [['Programming', '1'], ['Self-help', '2'], ...]
+    form['category'] = "Programming" # Can set using the option label or the option value
+    form['out_of_print'].check       # Check the checkbox
+  end
   assert_response :success
   
 ...or simply:
-  select_form.submit :name => 'Pickaxe', :category => 'Programming', :out_of_print => false
+  submit_form :name => 'Pickaxe', :category => 'Programming', :out_of_print => false
   
 What's the benefit of this over post :create...?  It uses the action of the form, it verifies that the form and the fields you specify are present and not misspelled, and it preserves any hidden or default values that may be in the form.
   
@@ -31,7 +31,7 @@ Features:
   * Works in functional and integration tests
   * You can pass submit a hash and it will update the form accordingly.  Submitting a form with
     new values can be as simple as: 
-      select_form.submit {:username => 'bob', :password => 'opensesame'}
+      submit_form :username => 'bob', :password => 'opensesame'
 
 
 

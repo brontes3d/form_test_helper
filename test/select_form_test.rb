@@ -431,6 +431,62 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal ['US', 'Canada'], form['country'].options
   end
   
+  def test_select_form_accepts_block
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_value = 'brent'
+    select_form do |form|
+      form['username'] = new_value
+    end
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+  end
+  
+  def test_submit_form_accepts_block
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_value = 'brent'
+    submit_form do |form|
+      form['username'] = new_value
+    end
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+  end
+  
+  def test_submit_form_without_block_selects_and_submits
+    html = <<-EOD
+      <%= form_tag({:action => 'create'}, {:id => :test}) %>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    render_rhtml html
+    submit_form
+    assert_response :success
+    assert_equal 'jason', @controller.params[:username]
+    
+    render_rhtml html
+    assert_select "form#?", "test"
+    new_value = 'brent'
+    submit_form "test", :username => new_value
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+    
+    render_rhtml html
+    new_value = 'david'
+    submit_form :username => new_value
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+  end
+  
   protected
   
   def assert_select_form_works_with(name, value)

@@ -33,7 +33,7 @@ module FormTestHelper
     
     # Submits the form.  Raises an exception if no submit button is present.
     def submit(opts={})
-      raise MissingSubmitError, "Submit button not found!" unless self.fields.any? {|field| field.is_a?(Submit) }
+      raise MissingSubmitError, "Submit button not found in form" unless self.fields.any? {|field| field.is_a?(Submit) }
       opts.stringify_keys.each do |key, value|
         self[key] = value
       end
@@ -292,7 +292,24 @@ module FormTestHelper
     else
       assert_select('form#?', text)
     end
-    Form.new(forms.first, self)
+    
+    returning Form.new(forms.first, self) do |form|
+      if block_given?
+        yield form
+        form.submit
+      end
+    end
+  end
+  
+  # Alias for select_form when called with a block. 
+  # Shortcut for select_form(name).submit(args) without block.
+  def submit_form(*args, &block)
+    if block_given?
+      select_form(*args, &block)
+    else
+      selector = args[0].is_a?(Hash) ? nil : args.shift
+      select_form(selector).submit(*args)
+    end
   end
   
   module Link
