@@ -37,4 +37,24 @@ class IntegrationTest < ActionController::IntegrationTest
   #   assert_response :success
   #   assert_action_name :destroy
   # end
+  
+  def test_select_methods_work_on_second_request_in_integration_test
+    get "/test/rhtml", :content => <<-EOD
+      <%= form_tag(:action => 'create') %>
+      </form>
+    EOD
+    select_form "/test/create"
+    
+    get "/test/rhtml", :content => <<-EOD
+      <%= form_tag(:action => 'destroy') %>
+      </form>
+    EOD
+    select_form "/test/destroy"
+    
+    get "/test/rhtml", :content => <<-EOD
+      <%= link_to "Index", { :action => "index" } %>
+    EOD
+    select_link("Index")
+    
+  end
 end

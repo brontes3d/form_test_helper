@@ -267,6 +267,7 @@ module FormTestHelper
   end
   
   def select_link(text=nil)
+    @html_document = nil # So it always grabs the latest response
     if css_select(%Q{a[href="#{text}"]}).any?
       links = assert_select("a[href=?]", text)
     elsif text.nil?
@@ -284,6 +285,7 @@ module FormTestHelper
   end
   
   def select_form(text=nil)
+    @html_document = nil # So it always grabs the latest response
     forms = case
     when text.nil?
       assert_select("form", 1)
