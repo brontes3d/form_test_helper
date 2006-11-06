@@ -70,3 +70,7 @@ RuntimeError: Can't set value for book[rating] that isn't one of the radio butto
 
 # TODO: Show form.submit and how all the params from the form are submitted (once the
 bug with recycle! is fixed (Ruby on Rails Ticket #6353))
+
+Acknowledgments
+===============
+form_test_helper was inspired by the excellent work of choonkeat on hpricot_forms, which is based on the hpricot library.  If you prefer hpricot over assert_select, give hpricot_forms a try!
