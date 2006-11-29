@@ -179,6 +179,14 @@ class SelectFormTest < Test::Unit::TestCase
     EOD
     form = select_form
     assert_nothing_raised { form.submit }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <input type="submit">
+      </form>
+    EOD
+    form = select_form
+    assert_nothing_raised { form.submit }
   end
   
   def test_submit_can_take_field_values

@@ -33,7 +33,7 @@ module FormTestHelper
     
     # Submits the form.  Raises an exception if no submit button is present.
     def submit(opts={})
-      raise MissingSubmitError, "Submit button not found in form" unless self.fields.any? {|field| field.is_a?(Submit) }
+      raise MissingSubmitError, "Submit button not found in form" unless tag.select('input[type="submit"], button[type="submit"]').any?
       opts.stringify_keys.each do |key, value|
         self[key] = value
       end
