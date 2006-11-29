@@ -139,6 +139,7 @@ class SelectFormTest < Test::Unit::TestCase
       <%= form_tag %></form>
     EOD
     assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form['username'] }
+    assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form.username }
   end
   
   def test_missing_field_when_updating_value
@@ -146,6 +147,7 @@ class SelectFormTest < Test::Unit::TestCase
       <%= form_tag %></form>
     EOD
     assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form['username'] = 'bob' }
+    assert_raise(FormTestHelper::Form::FieldNotFoundError) { select_form.username = 'bob' }
   end
   
   def test_submit
@@ -510,6 +512,7 @@ class SelectFormTest < Test::Unit::TestCase
     
     assert_equal value, form[name].initial_value
     assert_equal value, form[name].value
+    assert_equal value, form[name] # Value is optional
     
     new_value = "1"
     form[name] = new_value

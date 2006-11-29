@@ -77,6 +77,10 @@ module FormTestHelper
       find_field_by_name(field_name) || raise(FieldNotFoundError, "Field named #{field_name} not found in form.")
     end
     
+    def method_missing(method, *args)
+      self[method]
+    end
+    
     def []=(field_name, value)
       self[field_name].value = value
     end
@@ -101,14 +105,16 @@ module FormTestHelper
     end
   end
   
-  class Field
+  class Field < String
     include TagProxy
     attr_accessor :value
     attr_reader :name, :tags
     
+    alias_method :initialize_string, :initialize
     def initialize(form, tags)
       @form, @tags = form, tags
       reset
+      initialize_string(self.value.to_s)
     end
         
     def tag
@@ -129,6 +135,10 @@ module FormTestHelper
     
     def reset
       @value = initial_value
+    end
+
+    def to_s
+      self.value.to_s
     end
   end
   
