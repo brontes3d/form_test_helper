@@ -76,6 +76,37 @@ class SelectFormTest < Test::Unit::TestCase
     assert_raise(RuntimeError) { select_form.submit }
   end
   
+  def test_form_has_fields_hash
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "person[address][city]", "Anytown" %>
+      </form>
+    EOD
+    form = select_form
+    assert_not_nil form.fields_hash
+    assert_kind_of FormTestHelper::FieldsHash, form.fields_hash[:person]
+    assert_equal form.fields_hash[:person], form.fields_hash["person"]
+    assert_kind_of FormTestHelper::FieldsHash, form.fields_hash[:person][:address]
+    assert_equal "Anytown", form.fields_hash[:person][:address][:city].value
+    assert_kind_of FormTestHelper::Field, form.fields_hash[:person][:address][:city]
+  end
+  
+  def test_fields_accessible_by_methods_on_form
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "person[address][city]", "Anytown" %>
+      </form>
+    EOD
+    form = select_form
+    assert_not_nil form.fields_hash
+    assert_kind_of FormTestHelper::FieldsHash, form.person
+    assert_kind_of FormTestHelper::FieldsHash, form.person.address
+    assert_equal "Anytown", form.person.address.city
+    assert_kind_of FormTestHelper::FieldProxy, form.person.address.city
+    form.person.address.city = 'Managua'
+    assert_raise(FormTestHelper::FieldsHash::FieldNotFoundError) { form.person.name }
+  end
+  
   def test_reset_form
     render_rhtml <<-EOD
       <%= form_tag %>
@@ -195,6 +226,7 @@ class SelectFormTest < Test::Unit::TestCase
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         <%= text_field_tag "username", "jason" %>
+        <%= text_field_tag "account[status]", "closed" %>
         <%= submit_tag %>
       </form>
     EOD
@@ -203,6 +235,43 @@ class SelectFormTest < Test::Unit::TestCase
     form.submit :username => new_value
     assert_response :success
     assert_equal new_value, @controller.params[:username]
+
+    # FIXME: Uncomment when submit can take a hash of values
+    # form.submit :account => {:status => 'open'}
+    # assert_response :success
+    # assert_equal 'open', @controller.params[:account][:status]
+  end
+  
+  def test_accessing_simple_field_by_method_call
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_value = 'brent'
+    submit_form do |form|
+      assert_equal 'jason', form.username
+      form.username = new_value
+    end
+    assert_response :success
+    assert_equal new_value, @controller.params[:username]
+  end
+  
+  def test_accessing_deep_field_by_method_call
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "user[username]", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_value = 'brent'
+    submit_form do |form|
+      assert_equal 'jason', form.user.username
+      form.user.username = new_value
+    end
+    assert_response :success
+    assert_equal new_value, @controller.params[:user][:username]
   end
   
   def test_text_field
@@ -512,7 +581,7 @@ class SelectFormTest < Test::Unit::TestCase
     
     assert_equal value, form[name].initial_value
     assert_equal value, form[name].value
-    assert_equal value, form[name] # Value is optional
+    assert_equal value, form.send(name)
     
     new_value = "1"
     form[name] = new_value

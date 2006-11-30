@@ -25,7 +25,7 @@ module FormTestHelper
       params = {}
       fields.each {|field| params[field.name] = field.value unless field.value.nil? || params[field.name] } # don't submit the nils and fields already named
       
-      # Convert arrays and hashes in params, since test processing doesn't do this automatically
+      # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
       params = CGIMethods::FormEncodedPairParser.new(params).result
       
       @testcase.make_request(request_method, path, params)
@@ -49,21 +49,25 @@ module FormTestHelper
       @fields ||= tag.select('input, textarea, select, button').reject {|field_tag| field_tag['name'].nil? }.group_by {|field_tag| field_tag['name'] }.collect do |name, field_tags|
         case field_tags.first['type']
         when 'submit'
-          FormTestHelper::Submit.new(self, field_tags)
+          FormTestHelper::Submit.new(field_tags)
         when 'checkbox'
-          FormTestHelper::CheckBox.new(self, field_tags)
+          FormTestHelper::CheckBox.new(field_tags)
         when 'hidden'
-          FormTestHelper::Hidden.new(self, field_tags)
+          FormTestHelper::Hidden.new(field_tags)
         when 'radio'
-          FormTestHelper::RadioButtonGroup.new(self, field_tags)
+          FormTestHelper::RadioButtonGroup.new(field_tags)
         else
           if field_tags.first.name == 'select'
-            FormTestHelper::Select.new(self, field_tags)
+            FormTestHelper::Select.new(field_tags)
           else
-            FormTestHelper::Field.new(self, field_tags)
+            FormTestHelper::Field.new(field_tags)
           end
         end
       end
+    end
+    
+    def fields_hash
+      @fields_hash ||= FieldsHash.new(CGIMethods::FormEncodedPairParser.new(fields.collect {|field| [field.name, field] }).result)
     end
     
     def find_field_by_name(field_name)
@@ -78,7 +82,14 @@ module FormTestHelper
     end
     
     def method_missing(method, *args)
-      self[method]
+      method = method.to_s
+      if method.gsub!(/=$/, '')
+        self[method].value = *args
+      elsif fields_hash.has_key?(method)
+        fields_hash[method].proxy
+      else
+        self[method].proxy
+      end
     end
     
     def []=(field_name, value)
@@ -105,16 +116,53 @@ module FormTestHelper
     end
   end
   
-  class Field < String
+  # A hash of fields to allow infinite nesting of fields named like 'person[address][street]'
+  class FieldsHash < HashWithIndifferentAccess
+    class FieldNotFoundError < RuntimeError; end
+    
+    # Ignore requests for a proxy
+    def proxy
+      self
+    end
+    
+    protected
+    def convert_value(value)
+      value.is_a?(Hash) ? FieldsHash.new(value) : value
+    end
+    
+    def method_missing(method, *args)
+      method = method.to_s
+      if method.gsub!(/=$/, '') && self.has_key?(method)
+        self[method].value = *args
+      elsif self.has_key?(method)
+        self[method].proxy
+      else
+        raise(FieldNotFoundError, "Field named #{method.to_s} not found in FieldsHash.")
+      end
+    end
+  end
+  
+  # Looks and compares like a string, but receives methods like Field
+  class FieldProxy < String
+    attr_accessor :field
+    def initialize(field)
+      @field = field
+      super(field.value)
+    end
+    
+    def method_missing(*args)
+      @field.send(*args)
+    end
+  end
+  
+  class Field
     include TagProxy
     attr_accessor :value
     attr_reader :name, :tags
     
-    alias_method :initialize_string, :initialize
-    def initialize(form, tags)
-      @form, @tags = form, tags
+    def initialize(tags)
+      @tags = tags
       reset
-      initialize_string(self.value.to_s)
     end
         
     def tag
@@ -139,6 +187,10 @@ module FormTestHelper
 
     def to_s
       self.value.to_s
+    end
+    
+    def proxy
+      FieldProxy.new(self)
     end
   end
   
@@ -201,7 +253,7 @@ module FormTestHelper
   end
   
   class Select < Field
-    def initialize(form, tags)
+    def initialize(tags)
       @options = tags.first.select("option").collect {|option_tag| Option.new(self, option_tag) }
       super
     end
