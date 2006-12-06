@@ -222,7 +222,7 @@ class SelectFormTest < Test::Unit::TestCase
     assert_nothing_raised { form.submit }
   end
   
-  def test_submit_can_take_field_values
+  def test_submit_accepts_and_updates_field_values
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         <%= text_field_tag "username", "jason" %>
@@ -236,10 +236,9 @@ class SelectFormTest < Test::Unit::TestCase
     assert_response :success
     assert_equal new_value, @controller.params[:username]
 
-    # FIXME: Uncomment when submit can take a hash of values
-    # form.submit :account => {:status => 'open'}
-    # assert_response :success
-    # assert_equal 'open', @controller.params[:account][:status]
+    form.submit :account => {:status => 'open'}
+    assert_response :success
+    assert_equal 'open', @controller.params[:account][:status]
   end
   
   def test_accessing_simple_field_by_method_call
@@ -272,6 +271,50 @@ class SelectFormTest < Test::Unit::TestCase
     end
     assert_response :success
     assert_equal new_value, @controller.params[:user][:username]
+  end
+  
+  def test_with_object
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field :book, :name %>
+        <%= select :book, :category, [['Mining', 1], ['Programming', 2]] %>
+        <%= check_box :book, :classic %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    submit_form do |form|
+      form.with_object(:book) do |book|
+        book.name = 'Pickaxe'
+        book.category = 'Programming'
+        book.classic.check
+      end
+    end
+    assert_response :success
+    assert_equal 'Pickaxe', @controller.params[:book][:name]
+  end
+  
+  def test_updating_fields_with_hash
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field :book, :name %>
+        <%= select :book, :category, [['Mining', 1], ['Programming', 2]] %>
+        <%= check_box :book, :classic %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_book = {
+      :name => 'Pickaxe',
+      :category => '2', # Could assign "Programming", but then it won't equal 2 in the params.
+      :classic => '1'
+    }
+    submit_form do |form|
+      form.book.update(new_book)
+    end
+    assert_response :success
+
+    new_book.each do |attribute,expects|
+      assert_equal expects, @controller.params[:book][attribute]
+    end
   end
   
   def test_text_field
@@ -317,6 +360,7 @@ class SelectFormTest < Test::Unit::TestCase
   end
   
   def test_check_box_takes_boolean_values
+    # @article is an object set up in test_helper.rb
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         <%= check_box "article", "published" %>
@@ -324,10 +368,10 @@ class SelectFormTest < Test::Unit::TestCase
       </form>
     EOD
     form = select_form
-    form.submit("article[published]" => true)
+    form.submit("article" => {"published" => true})
     assert_equal "1", @controller.params["article"]['published']
     
-    form.submit("article[published]" => false)
+    form.submit("article" => {"published" => false})
     assert_equal "0", @controller.params["article"]['published']
   end
   
@@ -339,7 +383,8 @@ class SelectFormTest < Test::Unit::TestCase
       </form>
     EOD
     form = select_form
-    assert_raise(RuntimeError) { form.submit("article[published]" => "a large carrot") }
+    assert_raise(RuntimeError) { form.article.published = "perhaps" }
+    assert_raise(RuntimeError) { form.submit("article" => {"published" => "perhaps"}) }
   end
   
   def test_check_box_initially_checked
@@ -427,6 +472,7 @@ class SelectFormTest < Test::Unit::TestCase
     EOD
     form = select_form
     assert_equal %w(female male), form['gender'].options
+    assert_raise(RuntimeError) { form.gender = "neuter" }
     assert_raise(RuntimeError) { form.submit('gender' => "neuter") }
   end
   

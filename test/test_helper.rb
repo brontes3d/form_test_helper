@@ -33,6 +33,7 @@ class TestController < ActionController::Base
 
   def rhtml()
     @article = OpenStruct.new("published" => false, "written" => true)
+    @book = OpenStruct.new
     render :inline=>(@content || params[:content]), :layout=>false, :content_type=>Mime::HTML
     @content = nil
   end

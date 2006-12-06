@@ -34,9 +34,7 @@ module FormTestHelper
     # Submits the form.  Raises an exception if no submit button is present.
     def submit(opts={})
       raise MissingSubmitError, "Submit button not found in form" unless tag.select('input[type="submit"], button[type="submit"]').any?
-      opts.stringify_keys.each do |key, value|
-        self[key] = value
-      end
+      fields_hash.update(opts)
       submit_without_clicking_button
     end
     
@@ -70,6 +68,19 @@ module FormTestHelper
       @fields_hash ||= FieldsHash.new(CGIMethods::FormEncodedPairParser.new(fields.collect {|field| [field.name, field] }).result)
     end
     
+    # Accepts a block that can work with a single object (group of fields corresponding to a 
+    # single ActiveRecord object)
+    #
+    # Example:
+    #   form.with_object(:book) do |book|
+    #     book.name = 'Pickaxe'
+    #     book.category = 'Programming'
+    #     book.classic.check
+    #   end
+    def with_object(object_name)
+      yield self.send(object_name)
+    end
+    
     def find_field_by_name(field_name)
       matching_fields = self.fields.select {|field| field.name == field_name.to_s }
       return nil if matching_fields.empty?
@@ -78,7 +89,7 @@ module FormTestHelper
     
     # Same as find_field_by_name but raises an exception if the field doesn't exist.
     def [](field_name)
-      find_field_by_name(field_name) || raise(FieldNotFoundError, "Field named #{field_name} not found in form.")
+      find_field_by_name(field_name) || raise(FieldNotFoundError, "Field named '#{field_name}' not found in form.")
     end
     
     def method_missing(method, *args)
@@ -120,9 +131,36 @@ module FormTestHelper
   class FieldsHash < HashWithIndifferentAccess
     class FieldNotFoundError < RuntimeError; end
     
+    # Uses #merge! instead of #update when creating a new FieldsHash so #update can update
+    # field values, not the field objects themselves.
+    def initialize(constructor = {})
+      if constructor.is_a?(Hash)
+        # super()
+        merge!(constructor)
+      else
+        super(constructor)
+      end
+    end
+    
     # Ignore requests for a proxy
-    def proxy
+    def proxy; self end
+    
+    # Allow field values to be merged in from a hash.
+    # Example:
+    #   new_book = {
+    #     :name => 'Pickaxe',
+    #     :category => 'Programming',
+    #     :classic => true,
+    #   }
+    #   form.book.update(new_book)
+    def update(other_hash)
+      other_hash.each_pair { |key, value| self[key].update(value) }
       self
+    end
+    
+    def [](key)
+      raise(FieldNotFoundError, "Field named '#{key.to_s}' not found in FieldsHash.") unless self.has_key?(key)
+      super
     end
     
     protected
@@ -134,15 +172,13 @@ module FormTestHelper
       method = method.to_s
       if method.gsub!(/=$/, '') && self.has_key?(method)
         self[method].value = *args
-      elsif self.has_key?(method)
-        self[method].proxy
       else
-        raise(FieldNotFoundError, "Field named #{method.to_s} not found in FieldsHash.")
+        self[method].proxy
       end
     end
   end
   
-  # Looks and compares like a string, but receives methods like Field
+  # Looks and compares (==) like a string, but receives methods like Field
   class FieldProxy < String
     attr_accessor :field
     def initialize(field)
@@ -191,6 +227,12 @@ module FormTestHelper
     
     def proxy
       FieldProxy.new(self)
+    end
+    
+    # Update the value of the field.
+    # This enables updates to be done recursively through FieldsHashes until a form is reached
+    def update(new_value)
+      self.value = new_value
     end
   end
   
