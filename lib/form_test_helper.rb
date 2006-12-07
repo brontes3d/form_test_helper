@@ -56,7 +56,11 @@ module FormTestHelper
           FormTestHelper::RadioButtonGroup.new(field_tags)
         else
           if field_tags.first.name == 'select'
-            FormTestHelper::Select.new(field_tags)
+            if  field_tags.first['multiple'] # The multiple attribute is set
+              FormTestHelper::SelectMultiple.new(field_tags)
+            else
+              FormTestHelper::Select.new(field_tags)
+            end
           else
             FormTestHelper::Field.new(field_tags)
           end
@@ -308,12 +312,14 @@ module FormTestHelper
       when 0 # If no option is selected, browsers generally use the first
         @options.first.value
       else
-        if tag['multiple']
-          selected_options.collect(&:value)
-        else # When multiple options selected but the attr not specified, Firefox selects the last
-          selected_options.last.value 
-        end
+        initial_value_when_multiple_selected(selected_options)
       end
+    end
+    
+    def initial_value_when_multiple_selected(selected_options)
+      # When multiple options selected but the multiple attribute is not specified, 
+      # Firefox selects the last of the options.
+      selected_options.last.value
     end
     
     def options
@@ -340,6 +346,13 @@ module FormTestHelper
       else
         raise "Can't set value for #{self.name} that isn't one of the menu options."
       end
+    end
+  end
+  
+  # A select element that allows multiple values to be set
+  class SelectMultiple < Select
+    def initial_value_when_multiple_selected(selected_options)
+      selected_options.collect(&:value)
     end
   end
   
