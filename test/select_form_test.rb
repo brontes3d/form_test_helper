@@ -527,17 +527,17 @@ class SelectFormTest < Test::Unit::TestCase
       </form>
     EOD
     form = select_form
-    ['none_selected[]', 'one_selected[]', 'all_selected[]'].each do |field_name|
+    [:none_selected, :one_selected, :all_selected].each do |field_name|
       assert_equal %w(0 1), form[field_name].options
     end
-    assert_equal [], form['none_selected[]'].value
-    assert_equal %w(0), form['one_selected[]'].value
-    assert_equal %w(0 1), form['all_selected[]'].value
+    assert_equal [], form.none_selected
+    assert_equal %w(0), form.one_selected
+    assert_equal %w(0 1), form.all_selected
     
     form.submit_without_clicking_button
-    assert_nil @controller.params['none_selected']
-    assert_equal %w(0), @controller.params['one_selected']
-    assert_equal %w(0 1), @controller.params['all_selected']
+    assert_nil @controller.params[:none_selected]
+    assert_equal %w(0), @controller.params[:one_selected]
+    assert_equal %w(0 1), @controller.params[:all_selected]
   end
   
   def test_can_set_select_multiple_value_with_array
