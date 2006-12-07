@@ -23,7 +23,7 @@ module FormTestHelper
     def submit_without_clicking_button
       path = self.action.blank? ? @testcase.instance_variable_get("@request").request_uri : self.action # If no action attribute on form, it submits to the same URI
       params = {}
-      fields.each {|field| params[field.name] = field.value unless field.value.nil? || params[field.name] } # don't submit the nils and fields already named
+      fields.each {|field| params[field.name] = field.value unless field.value.nil? || field.value == [] || params[field.name] } # don't submit the nils, empty arrays, and fields already named
       
       # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
       params = CGIMethods::FormEncodedPairParser.new(params).result
@@ -86,7 +86,8 @@ module FormTestHelper
     end
     
     def find_field_by_name(field_name)
-      matching_fields = self.fields.select {|field| field.name == field_name.to_s }
+      field_name = field_name.to_s.gsub(/\[\]$/, '') # Strip any trailing empty square brackets
+      matching_fields = self.fields.select {|field| field.name == field_name }
       return nil if matching_fields.empty?
       matching_fields.first
     end
@@ -182,13 +183,9 @@ module FormTestHelper
     end
   end
   
-  # Looks and compares (==) like a string, but receives methods like Field
-  class FieldProxy < String
+  # Gets mixed into field values (strings, arrays) to make them respond to field methods
+  module FieldProxy
     attr_accessor :field
-    def initialize(field)
-      @field = field
-      super(field.value)
-    end
     
     def method_missing(*args)
       @field.send(*args)
@@ -217,8 +214,12 @@ module FormTestHelper
       end
     end
     
+    # The name for the field (which may have multiple values)
+    # Multiple form elements with the same name are considered only one field.  Fields that return
+    # multiple values when submitted are indicated with square brackets at the end of their
+    # name in HTML, but have no such ending internal to this class.
     def name
-      tag['name']
+      tag['name'].gsub(/\[\]$/, '')
     end
     
     def reset
@@ -230,7 +231,10 @@ module FormTestHelper
     end
     
     def proxy
-      FieldProxy.new(self)
+      returning @value do |value| 
+        value.extend(FieldProxy)
+        value.field = self
+      end
     end
     
     # Update the value of the field.
@@ -293,7 +297,7 @@ module FormTestHelper
       if options.include?(value)
         @value = value
       else
-        raise "Can't set value for #{self.name} that isn't one of the radio buttons."
+        raise "Can't set value '#{value}' for #{self.name} that isn't one of the radio buttons."
       end
     end
   end
@@ -312,14 +316,10 @@ module FormTestHelper
       when 0 # If no option is selected, browsers generally use the first
         @options.first.value
       else
-        initial_value_when_multiple_selected(selected_options)
+        # When multiple options selected but the multiple attribute is not specified, 
+        # Firefox selects the last of the options.
+        selected_options.last.value
       end
-    end
-    
-    def initial_value_when_multiple_selected(selected_options)
-      # When multiple options selected but the multiple attribute is not specified, 
-      # Firefox selects the last of the options.
-      selected_options.last.value
     end
     
     def options
@@ -338,21 +338,37 @@ module FormTestHelper
       @options.any? {|option| option.label }
     end
     
-    def value=(value)
+    # If +value+ is a label, return the real value.  If not an option, raise error.
+    def lookup_in_options(value)
       if options.include?(value)
-        @value = value
+        return value
       elsif options_are_labeled? && pair = options.detect {|option| option.include?(value.to_s) }
-        @value = pair.last
+        return pair.last
       else
-        raise "Can't set value for #{self.name} that isn't one of the menu options."
+        raise "Value '#{value}' isn't one of the options for #{self.name}."
       end
+    end
+    
+    def value=(value)
+      @value = lookup_in_options(value)
     end
   end
   
   # A select element that allows multiple values to be set
   class SelectMultiple < Select
-    def initial_value_when_multiple_selected(selected_options)
-      selected_options.collect(&:value)
+    class NameMissingSquareBracketsError < RuntimeError; end
+    
+    def initialize(tags)
+      super
+      raise NameMissingSquareBracketsError, "The name of #{name} must be #{name}[] for multiple values to be sent to Rails' params" unless tag['name'] =~ /\[\]$/
+    end
+    
+    def initial_value
+      @options.select(&:initially_selected).collect(&:value)
+    end
+    
+    def value=(values)
+      @value = values.collect {|value| lookup_in_options(value) }
     end
   end
   

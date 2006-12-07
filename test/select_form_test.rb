@@ -102,9 +102,23 @@ class SelectFormTest < Test::Unit::TestCase
     assert_kind_of FormTestHelper::FieldsHash, form.person
     assert_kind_of FormTestHelper::FieldsHash, form.person.address
     assert_equal "Anytown", form.person.address.city
-    assert_kind_of FormTestHelper::FieldProxy, form.person.address.city
+    assert_kind_of String, form.person.address.city
     form.person.address.city = 'Managua'
     assert_raise(FormTestHelper::FieldsHash::FieldNotFoundError) { form.person.name }
+  end
+  
+  def test_fields_accessible_by_methods_on_form_act_as_proxy
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "person[address][city]" %>
+        <%= select_tag 'number[]', %q{<option>0</option><option>1</option>}, :multiple => true %>
+      </form>
+    EOD
+    form = select_form
+    assert_kind_of String, form.person.address.city
+    assert_nothing_raised { form.person.address.city.tag }
+    assert_kind_of Array, form.number
+    assert_nothing_raised { form.number.tag }
   end
   
   def test_reset_form
@@ -481,21 +495,66 @@ class SelectFormTest < Test::Unit::TestCase
       select_tag name, %q{<option selected="selected">0</option><option>1</option>}
     end
   end
-
-  def test_select_with_multiple_selected
+  
+  def test_select_multiple_requires_square_brackets
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
-        #{select_tag 'number[]', %q{<option selected="selected">0</option><option selected="selected">1</option>}, :multiple => true}
+        <%= select_tag 'defunct_multiple_select', '', :multiple => true %>
+      </form>
+    EOD
+    assert_raise(FormTestHelper::SelectMultiple::NameMissingSquareBracketsError) { select_form.defunct_multiple_select }
+  end
+  
+  def test_select_multiple_can_be_found_with_square_brackets
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= select_tag 'multiple_select[]', '<option selected="selected">0</option>', :multiple => true %>
       </form>
     EOD
     form = select_form
-    assert_equal %w(0 1), form['number[]'].options
-    assert_equal %w(0 1), form['number[]'].value
-    form.submit_without_clicking_button
-    assert_equal %w(0 1), @controller.params['number'].first
+    assert_equal ['0'], form['multiple_select[]'].value # The field's name is "multiple_select" but this works for convenience
+    assert_equal ['0'], form['multiple_select'].value
+    assert_equal ['0'], form.multiple_select
   end
   
-  def test_select_with_multiple_selected_but_not_allowed
+
+  def test_initially_selected_value_of_select_multiple
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= select_tag 'none_selected[]', %q{<option>0</option><option>1</option>}, :multiple => true %>
+        <%= select_tag 'one_selected[]', %q{<option selected="selected">0</option><option>1</option>}, :multiple => true %>
+        <%= select_tag 'all_selected[]', %q{<option selected="selected">0</option><option selected="selected">1</option>}, :multiple => true %>
+      </form>
+    EOD
+    form = select_form
+    ['none_selected[]', 'one_selected[]', 'all_selected[]'].each do |field_name|
+      assert_equal %w(0 1), form[field_name].options
+    end
+    assert_equal [], form['none_selected[]'].value
+    assert_equal %w(0), form['one_selected[]'].value
+    assert_equal %w(0 1), form['all_selected[]'].value
+    
+    form.submit_without_clicking_button
+    assert_nil @controller.params['none_selected']
+    assert_equal %w(0), @controller.params['one_selected']
+    assert_equal %w(0 1), @controller.params['all_selected']
+  end
+  
+  def test_can_set_select_multiple_value_with_array
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= select_tag 'number[]', %q{<option>0</option><option>1</option>}, :multiple => true %>
+      </form>
+    EOD
+    form = select_form
+    assert_equal %w(0 1), form.number.options
+    form.number = form.number.options
+    assert_equal %w(0 1), form.number
+    form.submit_without_clicking_button
+    assert_equal %w(0 1), @controller.params['number']
+  end
+  
+  def test_select_with_multiple_initially_selected_but_not_allowed
     render_rhtml <<-EOD
       <%= form_tag %>
         #{select_tag 'number', %q{<option selected="selected">0</option><option selected="selected">1</option>}}
