@@ -21,6 +21,7 @@ module FormTestHelper
     
     # If you submit the form with JavaScript
     def submit_without_clicking_button
+      $stderr.puts "WARNING: A bug in Rails may make your form submit to the wrong location.  See http://dev.rubyonrails.org/ticket/4867 and urge David to apply the patch that was uploaded on 24-Apr-2006." if self.action.blank? # FIXME: Remove when 4867 is fixed
       path = self.action.blank? ? @testcase.instance_variable_get("@request").request_uri : self.action # If no action attribute on form, it submits to the same URI
       params = {}
       fields.each {|field| params[field.name] = field.value unless field.value.nil? || field.value == [] || params[field.name] } # don't submit the nils, empty arrays, and fields already named
