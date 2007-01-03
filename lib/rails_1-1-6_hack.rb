@@ -2,9 +2,9 @@
 
 module FormTestHelper
   
-  def make_request(method, path, params={})
+  def make_request(method, path, params={}, referring_uri=nil)
     if self.kind_of?(ActionController::IntegrationTest)
-      self.send(method, path, params.stringify_keys)
+      self.send(method, path, params.stringify_keys, {:referer => referring_uri})
     else
       # Have to generate a new request and have it recognized to be backwards-compatible wih 1.1.6
       request = ActionController::TestRequest.new
@@ -17,6 +17,7 @@ module FormTestHelper
       if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_name
         raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
       end
+      self.instance_eval("@request").env["HTTP_REFERER"] ||= referring_uri # facilitate testing of redirect_to :back
       self.send(method, params.delete("action"), params.stringify_keys)
     end
   end
