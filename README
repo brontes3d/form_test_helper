@@ -33,7 +33,8 @@ Features:
   * Works with RESTful links and forms - :method => :put, :delete, etc....
   * Checks for the presence of a submit button when you submit the form
   * Works in functional and integration tests and the console
-  * Assert presence of and follow links
+  * Sets HTTP_REFERER header so redirect_to :back works in tests
+  * Can assert presence of and follow links using select_link and #follow
 
 IRB example
 ======================================
