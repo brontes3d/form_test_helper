@@ -22,14 +22,14 @@ module FormTestHelper
     # If you submit the form with JavaScript
     def submit_without_clicking_button
       $stderr.puts "WARNING: A bug in Rails may make your form submit to the wrong location.  See http://dev.rubyonrails.org/ticket/4867 and urge David to apply the patch that was uploaded on 24-Apr-2006." if self.action.blank? # FIXME: Remove when 4867 is fixed
-      path = self.action.blank? ? @testcase.instance_variable_get("@request").request_uri : self.action # If no action attribute on form, it submits to the same URI
+      path = self.action.blank? ? self.uri : self.action # If no action attribute on form, it submits to the same URI where the form was displayed
       params = {}
       fields.each {|field| params[field.name] = field.value unless field.value.nil? || field.value == [] || params[field.name] } # don't submit the nils, empty arrays, and fields already named
       
       # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
       params = CGIMethods::FormEncodedPairParser.new(params).result
       
-      @testcase.make_request(request_method, path, params)
+      @testcase.make_request(request_method, path, params, self.uri)
     end
     
     # Submits the form.  Raises an exception if no submit button is present.
@@ -37,6 +37,10 @@ module FormTestHelper
       raise MissingSubmitError, "Submit button not found in form" unless tag.select('input[type="submit"], button[type="submit"]').any?
       fields_hash.update(opts)
       submit_without_clicking_button
+    end
+    
+    def uri
+      @testcase.instance_variable_get("@request").request_uri
     end
     
     def field_names
@@ -473,14 +477,15 @@ module FormTestHelper
     end
   end
   
-  def make_request(method, path, params={})
+  def make_request(method, path, params={}, referring_uri=nil)
     if self.kind_of?(ActionController::IntegrationTest)
-      self.send(method, path, params.stringify_keys)
+      self.send(method, path, params.stringify_keys, {:referer => referring_uri})
     else
       params.merge!(ActionController::Routing::Routes.recognize_path(path, :method => method))
       if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_name
         raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
       end
+      self.instance_eval("@request").env["HTTP_REFERER"] ||= referring_uri # facilitate testing of redirect_to :back
       self.send(method, params.delete(:action), params.stringify_keys)
     end
   end

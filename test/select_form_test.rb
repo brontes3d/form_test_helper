@@ -671,6 +671,18 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal new_value, @controller.params[:username]
   end
   
+  def test_submit_form_sets_referrer_header
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'redirect_to_back') %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    
+    submit_form
+    assert_response :redirect
+    assert_redirected_to :action => 'rhtml'
+  end
+  
   protected
   
   def assert_select_form_works_with(name, value)

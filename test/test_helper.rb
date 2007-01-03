@@ -22,6 +22,10 @@ class TestController < ActionController::Base
   def destroy
     render :text => 'destroyed'
   end
+  
+  def redirect_to_back
+    redirect_to :back
+  end
 
   def response_with=(content)
     @content = content

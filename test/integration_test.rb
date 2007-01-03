@@ -38,6 +38,16 @@ class IntegrationTest < ActionController::IntegrationTest
   #   assert_action_name :destroy
   # end
   
+  def test_redirect_back_after_form_submit
+    get "/test/rhtml", :content => <<-EOD
+      <%= form_tag(:action => 'redirect_to_back') %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    submit_form
+    assert_redirected_to "/test/rhtml"
+  end
+  
   def test_select_methods_work_on_second_request_in_integration_test
     get "/test/rhtml", :content => <<-EOD
       <%= form_tag(:action => 'create') %>
