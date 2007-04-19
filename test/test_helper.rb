@@ -64,10 +64,16 @@ class OtherController < ActionController::Base
   
 end
 
+module Admin
+  class NamespacedController < TestController
+  
+  end
+end
+
 # FIXME: This is odd, but I guess you have to or it uses routes & controllers from the app?
 ActionController::Routing::Routes.clear!
 ActionController::Routing::Routes.draw {|m| m.connect ':controller/:action/:id' }
-ActionController::Routing.use_controllers! %w(test other)
+ActionController::Routing.use_controllers! %w(test other admin/namespaced)
 
 class Test::Unit::TestCase
   protected

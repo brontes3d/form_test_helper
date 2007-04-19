@@ -210,6 +210,20 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal({"commit"=>"Save changes", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
   end
   
+  def test_submit_to_namespaced_controller
+	@controller = Admin::NamespacedController.new
+    value = "jason"
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "#{value}" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    submit_form
+    assert_response :success
+    assert_equal value, @controller.params[:username]
+  end
+  
   def test_submit_requires_submit_tag
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>

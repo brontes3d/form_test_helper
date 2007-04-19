@@ -482,7 +482,7 @@ module FormTestHelper
       self.send(method, path, params.stringify_keys, {:referer => referring_uri})
     else
       params.merge!(ActionController::Routing::Routes.recognize_path(path, :method => method))
-      if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_name
+      if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_path
         raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
       end
       self.instance_eval("@request").env["HTTP_REFERER"] ||= referring_uri # facilitate testing of redirect_to :back
