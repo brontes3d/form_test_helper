@@ -230,24 +230,28 @@ class SelectFormTest < Test::Unit::TestCase
         <%= text_field_tag "username", "jason" %>
       </form>
     EOD
-    form = select_form
-    assert_raise(FormTestHelper::Form::MissingSubmitError) { form.submit }
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { submit_form }
     
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         <BUTTON name="submit" value="submit" type="submit">Submit</BUTTON>
       </form>
     EOD
-    form = select_form
-    assert_nothing_raised { form.submit }
+    assert_nothing_raised { submit_form }
     
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
         <input type="submit">
       </form>
     EOD
-    form = select_form
-    assert_nothing_raised { form.submit }
+    assert_nothing_raised { submit_form }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= image_submit_tag 'image.png' %>
+      </form>
+    EOD
+    assert_nothing_raised { submit_form }
   end
   
   def test_submit_accepts_and_updates_field_values
