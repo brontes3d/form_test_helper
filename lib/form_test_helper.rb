@@ -14,6 +14,7 @@ module FormTestHelper
     class MissingSubmitError < RuntimeError; end
     include TagProxy
     attr_reader :tag
+    attr_accessor :xhr
     
     def initialize(tag, testcase)
       @tag, @testcase = tag, testcase
@@ -29,12 +30,13 @@ module FormTestHelper
       # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
       params = CGIMethods::FormEncodedPairParser.new(params).result
       
-      @testcase.make_request(request_method, path, params, self.uri)
+      @testcase.make_request(request_method, path, params, self.uri, xhr)
     end
     
     # Submits the form.  Raises an exception if no submit button is present.
     def submit(opts={})
       raise MissingSubmitError, "Submit button not found in form" unless tag.select('input[type="submit"], input[type="image"], button[type="submit"]').any?
+      @xhr = opts.delete(:xhr)
       fields_hash.update(opts)
       submit_without_clicking_button
     end
@@ -477,7 +479,7 @@ module FormTestHelper
     end
   end
   
-  def make_request(method, path, params={}, referring_uri=nil)
+  def make_request(method, path, params={}, referring_uri=nil, use_xhr=false)
     if self.kind_of?(ActionController::IntegrationTest)
       self.send(method, path, params.stringify_keys, {:referer => referring_uri})
     else
@@ -486,7 +488,11 @@ module FormTestHelper
         raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
       end
       self.instance_eval("@request").env["HTTP_REFERER"] ||= referring_uri # facilitate testing of redirect_to :back
-      self.send(method, params.delete(:action), params.stringify_keys)
+      if use_xhr
+        self.xhr(method, params.delete(:action), params.stringify_keys)
+      else
+        self.send(method, params.delete(:action), params.stringify_keys)
+      end
     end
   end
 end

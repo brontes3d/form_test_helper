@@ -14,7 +14,11 @@ class TestController < ActionController::Base
   verify :method => :post, :only => [ :create ],
             :redirect_to => { :action => :index }
   def create
-    render :text => 'created'
+    if request.xhr?
+      render :text => 'created with xhr'
+     else
+      render :text => 'created'
+    end
   end
   
   verify :method => :delete, :only => [ :destroy ],
