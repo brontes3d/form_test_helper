@@ -424,7 +424,7 @@ module FormTestHelper
     link
   end
   
-  def select_form(text=nil)
+  def select_form(text=nil, use_xhr=false)
     @html_document = nil # So it always grabs the latest response
     forms = case
     when text.nil?
@@ -438,7 +438,7 @@ module FormTestHelper
     returning Form.new(forms.first, self) do |form|
       if block_given?
         yield form
-        form.submit
+        form.submit :xhr => use_xhr
       end
     end
   end
@@ -447,7 +447,11 @@ module FormTestHelper
   # Shortcut for select_form(name).submit(args) without block.
   def submit_form(*args, &block)
     if block_given?
-      select_form(*args, &block)
+      if args[0].is_a?(Hash)
+        select_form(nil, args[0].delete(:xhr), &block)
+      else
+        select_form(*args, &block)
+      end
     else
       selector = args[0].is_a?(Hash) ? nil : args.shift
       select_form(selector).submit(*args)

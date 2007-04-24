@@ -273,19 +273,36 @@ class SelectFormTest < Test::Unit::TestCase
     assert_equal 'open', @controller.params[:account][:status]
   end
   
-  def test_submit_by_xhr
+  def render_for_xhr
     render_rhtml <<-EOD
       <% form_remote_tag :url => {:action => 'create'} do -%>
         <%= text_field_tag "username", "jason" %>
         <%= submit_tag %>
       <% end -%>
     EOD
-    form = select_form
-    new_value = 'brent'
-    form.submit :username => new_value, :xhr => true
+  end
+  
+  def check_xhr_responses(new_value)
     assert_response :success
     assert_match 'xhr', @response.body
     assert_equal new_value, @controller.params[:username]
+  end
+  
+  def test_submit_by_xhr
+    render_for_xhr
+    form = select_form
+    new_value = 'brent'
+    form.submit :username => new_value, :xhr => true
+    check_xhr_responses new_value
+  end
+  
+  def test_submit_by_xhr_using_a_block
+    render_for_xhr
+    new_value = 'brent'
+    submit_form :xhr => true do | form |
+      form['username'] = new_value
+    end
+    check_xhr_responses new_value
   end
   
   def test_accessing_simple_field_by_method_call
