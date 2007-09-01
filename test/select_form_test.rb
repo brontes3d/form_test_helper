@@ -73,7 +73,7 @@ class SelectFormTest < Test::Unit::TestCase
         <%= submit_tag %>
       </form>
     EOD
-    assert_raise(RuntimeError) { select_form.submit }
+    select_form.submit
   end
   
   def test_form_has_fields_hash

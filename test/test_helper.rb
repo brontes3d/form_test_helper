@@ -38,7 +38,7 @@ class TestController < ActionController::Base
   def response_with(&block)
     @update = block
   end
-
+ 
   def rhtml()
     @article = OpenStruct.new("published" => false, "written" => true)
     @book = OpenStruct.new
