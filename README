@@ -2,6 +2,16 @@ Form Test Helper
 =====================================
 * Requires EdgeRails or the assert_select plugin.
 
+Versions
+=====================================
+* Use form_test_helper 1.0.0 if you are using Rails 1.2.x up to Rails Edge revision 6763
+* Use form_test_helper 1.1.0 if you are using Rails Edge revisions 6764 up to 7420
+* Use form_test_helper edge if you are using Rails Edge greater then 7420
+
+See http://code.google.com/p/form-test-helper/ for more information.
+
+What Does Form Test Helper Do?
+=====================================
 This plugin uses +assert_select+ to verify and manipulate your forms.  It solves the problem we've 
 all run into where you change the form but the test doesn't break because you're doing this in 
 the test:
