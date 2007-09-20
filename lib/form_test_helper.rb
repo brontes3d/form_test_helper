@@ -482,7 +482,7 @@ module FormTestHelper
   end
   
   def make_request(method, path, params={}, referring_uri=nil, use_xhr=false)
-    if self.kind_of?(ActionController::IntegrationTest) 
+    if self.kind_of?(ActionController::IntegrationTest) || self.kind_of?(ActionController::Integration::Session)
       if use_xhr
         params = {'_method' => method }.merge(params)
         xml_http_request :post, path, params

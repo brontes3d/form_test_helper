@@ -23,31 +23,35 @@ ActionController::Routing.controller_paths.each do |path|
 end
 
 
-class Test::Unit::TestCase
-  protected
-    def render_rhtml(rhtml)
-      @controller.response_with = rhtml
-      get :rhtml
-    end
+module FormTestHelperAssertions
 
-    def render_html(html)
-      @controller.response_with = html
-      get :html
-    end
+  def render_rhtml(rhtml)
+    @controller.response_with = rhtml
+    get :rhtml
+  end
 
-
-    def render_rjs(&block)
-      @controller.response_with &block
-      get :rjs
-    end
+  def render_html(html)
+    @controller.response_with = html
+    get :html
+  end
 
 
-    def render_xml(xml)
-      @controller.response_with = xml
-      get :xml
-    end
-    
-    def assert_action_name(expected_name)
-      assert_equal expected_name.to_s, @controller.action_name, "Didn't follow link"
-    end
+  def render_rjs(&block)
+    @controller.response_with &block
+    get :rjs
+  end
+
+
+  def render_xml(xml)
+    @controller.response_with = xml
+    get :xml
+  end
+  
+  def assert_action_name(expected_name)
+    assert_equal expected_name.to_s, @controller.action_name, "Didn't follow link"
+  end
+  
 end
+
+Test::Unit::TestCase.send :include, FormTestHelperAssertions
+ActionController::Integration::Session.send :include, FormTestHelperAssertions
