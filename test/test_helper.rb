@@ -53,5 +53,22 @@ module FormTestHelperAssertions
   
 end
 
+module XHRHelpers
+  def render_for_xhr
+    render_rhtml <<-EOD
+      <% form_remote_tag :url => {:action => 'create'} do -%>
+        <%= text_field_tag "username", "jason" %>
+        <%= submit_tag %>
+      <% end -%>
+    EOD
+  end
+
+  def check_xhr_responses(new_value)
+    assert_response :success
+    assert_match 'xhr', @response.body
+    assert_equal new_value, @controller.params[:username]
+  end
+end
+
 Test::Unit::TestCase.send :include, FormTestHelperAssertions
 ActionController::Integration::Session.send :include, FormTestHelperAssertions
