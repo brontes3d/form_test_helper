@@ -149,6 +149,36 @@ class SubmitFormTest < Test::Unit::TestCase
     assert_equal new_value, @controller.params[:user][:username]
   end
   
+  def test_accessing_field_as_keys
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "user[username]", "jason" %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    new_value = 'brent'
+    submit_form do |form|
+      assert_equal 'jason', form.user.username
+      form.user['username'] = new_value
+    end
+    assert_response :success
+    assert_equal new_value, @controller.params[:user][:username]    
+  end
+
+  def test_accessing_nonexistant_fields_as_keys_raises_exceptions
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    assert_raise(FormTestHelper::Form::FieldNotFoundError) do 
+      submit_form do |form|
+        assert_equal 'jason', form.user.username
+        form.user['username'] = new_value
+      end
+    end
+  end
+  
   def test_with_object
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>

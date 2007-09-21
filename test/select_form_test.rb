@@ -107,6 +107,23 @@ class SelectFormTest < Test::Unit::TestCase
     form.person.address.city = 'Managua'
     assert_raise(FormTestHelper::FieldsHash::FieldNotFoundError) { form.person.name }
   end
+
+  def test_fields_accessible_by_keys_on_form
+    render_rhtml <<-EOD
+      <%= form_tag %>
+        <%= text_field_tag "person[address][city]", "Anytown" %>
+      </form>
+    EOD
+    form = select_form
+    assert_not_nil form.fields_hash
+    assert_kind_of FormTestHelper::FieldsHash, form.person
+    assert_kind_of FormTestHelper::FieldsHash, form.person.address
+    assert_equal "Anytown", form.person.address.city
+    assert_kind_of String, form.person.address.city
+    form.person.address['city'] = 'Managua'
+    assert_equal 'Managua', form.person.address.city.value
+    assert_raise(FormTestHelper::FieldsHash::FieldNotFoundError) { form.person.name }
+  end
   
   def test_fields_accessible_by_methods_on_form_act_as_proxy
     render_rhtml <<-EOD

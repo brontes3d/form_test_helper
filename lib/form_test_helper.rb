@@ -173,6 +173,20 @@ module FormTestHelper
       super
     end
     
+    # Allows setting form field values using key access to form fields:
+    # Examples:
+    #   form = select_form
+    #   form.user['name'] = 'joe'
+    #
+    #   submit_form do |form|
+    #     form.user['name'] = 'joe'
+    #   end
+    # 
+    def []=(key, value)
+      self[key].value = value
+    end
+
+    
     protected
     def convert_value(value)
       value.is_a?(Hash) ? FieldsHash.new(value) : value
