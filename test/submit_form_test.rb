@@ -222,5 +222,14 @@ class SubmitFormTest < Test::Unit::TestCase
       assert_equal expects, @controller.params[:book][attribute]
     end
   end
-
+  
+  def test_submit_form_sets_response_body
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= submit_tag %>
+      </form>
+    EOD
+    submit_form  
+    assert_equal "created", @response.body
+  end
 end
