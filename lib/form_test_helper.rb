@@ -418,58 +418,6 @@ module FormTestHelper
     end
   end
   
-  def select_link(text=nil)
-    @html_document = nil # So it always grabs the latest response
-    if css_select(%Q{a[href="#{text}"]}).any?
-      links = assert_select("a[href=?]", text)
-    elsif text.nil?
-      links = assert_select('a', 1)
-    else
-      links = assert_select('a', text)
-    end
-    decorate_link(links.first)
-  end
-  
-  def decorate_link(link)
-    link.extend FormTestHelper::Link
-    link.testcase = self
-    link
-  end
-  
-  def select_form(text=nil, use_xhr=false)
-    @html_document = nil # So it always grabs the latest response
-    forms = case
-    when text.nil?
-      assert_select("form", 1)
-    when css_select(%Q{form[action="#{text}"]}).any?
-      assert_select("form[action=?]", text)
-    else
-      assert_select('form#?', text)
-    end
-    
-    returning Form.new(forms.first, self) do |form|
-      if block_given?
-        yield form
-        form.submit :xhr => use_xhr
-      end
-    end
-  end
-  
-  # Alias for select_form when called with a block. 
-  # Shortcut for select_form(name).submit(args) without block.
-  def submit_form(*args, &block)
-    if block_given?
-      if args[0].is_a?(Hash)
-        select_form(nil, args[0].delete(:xhr), &block)
-      else
-        select_form(*args, &block)
-      end
-    else
-      selector = args[0].is_a?(Hash) ? nil : args.shift
-      select_form(selector).submit(*args)
-    end
-  end
-  
   module Link
     def follow
       path = self.href
@@ -494,26 +442,5 @@ module FormTestHelper
       self
     end
   end
-  
-  def make_request(method, path, params={}, referring_uri=nil, use_xhr=false)
-    if self.kind_of?(ActionController::IntegrationTest) || self.kind_of?(ActionController::Integration::Session)
-      if use_xhr
-        params = {'_method' => method }.merge(params)
-        xml_http_request :post, path, params
-      else
-        self.send(method, path, params.stringify_keys, {:referer => referring_uri})
-      end
-    else
-      params.merge!(ActionController::Routing::Routes.recognize_path(path, :method => method))
-#      if params[:controller] && params[:controller] != current_controller = self.instance_eval("@controller").controller_path
-#        raise "Can't follow links outside of current controller (from #{current_controller} to #{params[:controller]})"
-#      end
-      self.instance_eval("@request").env["HTTP_REFERER"] ||= referring_uri # facilitate testing of redirect_to :back
-      if use_xhr
-        self.xhr(method, params.delete(:action), params.stringify_keys)
-      else
-        self.send(method, params.delete(:action), params.stringify_keys)
-      end
-    end
-  end
+
 end
