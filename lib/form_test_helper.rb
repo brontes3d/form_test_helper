@@ -16,8 +16,8 @@ module FormTestHelper
     attr_reader :tag
     attr_accessor :xhr
     
-    def initialize(tag, testcase)
-      @tag, @testcase = tag, testcase
+    def initialize(tag, testcase, submit_value=nil)
+      @tag, @testcase, @submit_value = tag, testcase, submit_value
     end
     
     # If you submit the form with JavaScript
@@ -48,10 +48,13 @@ module FormTestHelper
     end
     
     def fields
+      return @fields if @fields
       # Input, textarea, select, and button are valid field tags.  Name is a required attribute.
-      @fields ||= tag.select('input, textarea, select, button').reject {|field_tag| field_tag['name'].nil? }.group_by {|field_tag| field_tag['name'] }.collect do |name, field_tags|
+      fields = tag.select('input, textarea, select, button').reject{ |tag| tag['name'].nil? }
+      @fields = fields.group_by {|field_tag| field_tag['name'] }.collect do |name, field_tags|
         case field_tags.first['type']
         when 'submit'
+          field_tags.reject!{ |tag,*| tag['value'] != @submit_value } if @submit_value
           FormTestHelper::Submit.new(field_tags)
         when 'checkbox'
           FormTestHelper::CheckBox.new(field_tags)
