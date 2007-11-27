@@ -36,7 +36,10 @@ module FormTestHelper
         end
       else
         selector = args[0].is_a?(Hash) ? nil : args.shift
-        select_form(selector).submit(*args)
+        options = args.last.is_a?(Hash) ? args.last : {}
+        value = options.delete(:value)
+        xhr = options.delete(:xhr)
+        select_form(selector, :xhr => xhr, :value => value).submit(*args)
       end
     end
   end  

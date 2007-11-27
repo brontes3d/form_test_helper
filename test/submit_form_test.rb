@@ -232,4 +232,38 @@ class SubmitFormTest < Test::Unit::TestCase
     submit_form  
     assert_equal "created", @response.body
   end
+  
+  def test_submit_form_with_multiple_submit_values_submitting_with_a_block
+    value = "jason"
+    render_rhtml <<-EOD
+      <%= form_tag({:action => 'create'}, {:id => "test" }) %>
+        <%= text_field_tag "username", "#{value}" %>
+        <%= submit_tag "Yes", :value => "yes" %>
+        <%= submit_tag "No", :value => "no" %>
+        <%= submit_tag "Maybe", :value => "maybe" %>
+      </form>
+    EOD
+    form = submit_form "test", :value => "maybe" do |form|
+    end
+    assert_response :success
+    assert_equal value, @controller.params[:username]
+    assert_equal({"commit"=>"maybe", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+  end
+
+  def test_submit_form_with_multiple_submit_values_submitting_without_a_block
+    value = "jason"
+    render_rhtml <<-EOD
+      <%= form_tag({:action => 'create'}, {:id => "test" }) %>
+        <%= text_field_tag "username", "#{value}" %>
+        <%= submit_tag "Yes", :value => "yes" %>
+        <%= submit_tag "No", :value => "no" %>
+        <%= submit_tag "Maybe", :value => "maybe" %>
+      </form>
+    EOD
+    form = submit_form "test", :value => "maybe"
+    assert_response :success
+    assert_equal value, @controller.params[:username]
+    assert_equal({"commit"=>"maybe", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
+  end
+  
 end

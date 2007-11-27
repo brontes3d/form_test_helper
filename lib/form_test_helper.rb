@@ -172,7 +172,9 @@ module FormTestHelper
     end
     
     def [](key)
-      raise(FieldNotFoundError, "Field named '#{key.to_s}' not found in FieldsHash.") unless self.has_key?(key)
+      unless self.has_key?(key)
+        raise(FieldNotFoundError, "Field named '#{key.to_s}' not found in FieldsHash.") 
+      end
       super
     end
     
