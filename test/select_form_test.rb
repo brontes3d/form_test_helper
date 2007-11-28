@@ -65,7 +65,7 @@ class SelectFormTest < Test::Unit::TestCase
     render_html %Q{<form id="one"></form><form id="two"></form>}
     assert_raise(Test::Unit::AssertionFailedError) { select_form }
   end
-  
+    
   def test_selected_form_submits_to_action
     render_rhtml %Q{<%= form_tag({:action => 'create'}) + submit_tag + "</form>" %>}
     form = select_form "/test/create"

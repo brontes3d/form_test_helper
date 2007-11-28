@@ -55,6 +55,58 @@ class SubmitFormTest < Test::Unit::TestCase
     assert_nothing_raised { submit_form }
   end
   
+  def test_submit_requires_submit_tag_with_value
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= text_field_tag "username", "jason" %>
+      </form>
+    EOD
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { submit_form :submit_value => "yes" }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <BUTTON name="submit" value="yes" type="submit">Submit</BUTTON>
+      </form>
+    EOD
+    assert_nothing_raised { submit_form :submit_value => "yes"  }
+
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <BUTTON name="submit" value="no" type="submit">Submit</BUTTON>
+      </form>
+    EOD
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { submit_form :submit_value => "yes"  }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <input type="submit" value="yes">
+      </form>
+    EOD
+    assert_nothing_raised { submit_form :submit_value => "yes"  }
+
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <input type="submit" value="no">
+      </form>
+    EOD
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { submit_form :submit_value => "yes"  }
+    
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= image_submit_tag 'image.png', :value => "yes" %>
+      </form>
+    EOD
+    assert_nothing_raised { submit_form }    
+
+    render_rhtml <<-EOD
+      <%= form_tag(:action => 'create') %>
+        <%= image_submit_tag 'image.png', :value => "no" %>
+      </form>
+    EOD
+    assert_raise(FormTestHelper::Form::MissingSubmitError) { submit_form :submit_value => "yes"  }
+
+  end
+  
   def test_submit_form_accepts_block
     render_rhtml <<-EOD
       <%= form_tag(:action => 'create') %>
