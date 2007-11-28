@@ -21,6 +21,17 @@ Instead, you can work with the below form:
   submit_form :book => {:name => 'Pickaxe', :category => 'Programming', :out_of_print => false}
 
 What's the benefit of this over post :create...?  It uses the action of the form, it verifies that the form and the fields you specify are present and not misspelled, and it preserves any hidden or default values that may be in the form.
+
+=== Installing
+
+As an external:
+  ./script/plugin install -x http://form-test-helper.googlecode.com/svn/form_test_helper/
+
+Not as an external:
+  ./script/plugin install http://form-test-helper.googlecode.com/svn/form_test_helper/
+
+With piston:
+  piston import http://form-test-helper.googlecode.com/svn/form_test_helper/
   
 === Features
 
