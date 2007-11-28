@@ -1,26 +1,61 @@
 module FormTestHelper
 
   module FormMethods
-    def select_form(text=nil, options={})
-      use_xhr = options.delete(:xhr)
-      value = options.delete(:value)
+    # Returns a form object with the passed in +args+. +args+
+    # can be the text selector, options and a possible block, all
+    # of which are optional.
+    #
+    # When given a block the form object will be passed into the
+    # the block which can be used to set values on the form. The
+    # block will automatically submit the form.
+    #
+    # == Options
+    #  * xhr - can be true or false. This sets the type of request to be
+    #          made when the form is submitted. default is false
+    #  * :submit_value - a string. When selecting a form with multiple submit
+    #          buttons this can be used to specify the value of which submit
+    #          button to use.
+    #
+    # == Examples
+    #   # select the first form
+    #   select_form
+    #
+    #   # select the form#form_id
+    #   select_form "form_id"
+    #
+    #   # select form#form_id and tell it that it will make an xhr call
+    #   select_form "form_id", :xhr => true
+    #
+    #   # select form#form_id and 
+    #   select_form "form_id", :submit_value => "yes"
+    #
+    #   # select the first form and tell it that it will make an xhr call
+    #   select_form :xhr => true
+    #
+    #   # selecting a form, setting a value for a field and submitting it
+    #   select_form "form_id" do |form|
+    #     form.user.name = "joe"
+    #   end
+    #
+    def select_form(*args)
+      options = args.extract_options!
+      text = args.first
+      xhr = options.delete(:xhr)
+      submit_value = options.delete(:submit_value)
       @html_document = nil # So it always grabs the latest response
     
-      forms = case
-      when text.nil?
-        assert_select("form", 1)
-      when value.nil?
-        elements = css_select(%|form[action=#{text}]|)
-        elements.any? ? elements : assert_select("form#?", text)
+      forms = if text.nil?
+        select_first_form
+      elsif submit_value.nil?
+        select_form_with_id_or_action text
       else
-        elements = css_select(%|form[action=#{text}] input[type=submit][value=#{value}]|)
-        elements.any? ? find_parent(elements.first, "form") : assert_select("form#?", text)
+        select_form_with_id_or_action_and_a_submit_value(text, submit_value)
       end
     
-      returning Form.new(forms.first, self, value) do |form|
+      returning Form.new(forms.first, self, :submit_value => submit_value, :xhr => xhr ) do |form|
         if block_given?
           yield form
-          form.submit :xhr => use_xhr
+          form.submit
         end
       end
     end
@@ -29,19 +64,39 @@ module FormTestHelper
     # Shortcut for select_form(name).submit(args) without block.
     def submit_form(*args, &block)
       if block_given?
-        if args[0].is_a?(Hash)
-          select_form(nil, args[0], &block)
-        else
-          select_form(*args, &block)
-        end
+        select_form(*args, &block)
       else
-        selector = args[0].is_a?(Hash) ? nil : args.shift
-        options = args.last.is_a?(Hash) ? args.last : {}
-        value = options.delete(:value)
+        options = args.extract_options!
+        selector = args.empty? ? nil : args
+        
+        submit_value = options.delete(:submit_value)
         xhr = options.delete(:xhr)
-        select_form(selector, :xhr => xhr, :value => value).submit(*args)
+        
+        select_form(selector, :xhr => xhr, :submit_value => submit_value).submit(options)
       end
     end
-  end  
+  
+    private
+  
+    def find_parent(element, text)
+      element.name == text ? [element] : find_parent(element.parent, text)
+    end
+  
+    def select_first_form
+      assert_select("form", 1)
+    end
+  
+    def select_form_with_id_or_action(text)
+      elements = css_select(%|form[action=#{text}]|)
+      elements.any? ? elements : assert_select("form#?", text)
+    end
+  
+    def select_form_with_id_or_action_and_a_submit_value(text, submit_value)
+      elements = css_select(%|form##{text} input[type=submit][value=#{submit_value}]|) 
+      elements = css_select(%|form[action=#{text}] input[type=submit][value=#{submit_value}]|) if elements.empty?
+      elements.any? ? find_parent(elements.first, "form") : assert_select("form#?", text)
+    end
 
+  end 
+  
 end

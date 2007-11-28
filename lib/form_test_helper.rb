@@ -14,10 +14,15 @@ module FormTestHelper
     class MissingSubmitError < RuntimeError; end
     include TagProxy
     attr_reader :tag
-    attr_accessor :xhr
     
-    def initialize(tag, testcase, submit_value=nil)
-      @tag, @testcase, @submit_value = tag, testcase, submit_value
+    def initialize(tag, testcase, options={})
+      @tag, @testcase = tag, testcase, 
+      @submit_value = options.delete(:submit_value)
+      @xhr = options.delete(:xhr)
+    end
+
+    def xhr?
+      @xhr
     end
     
     # If you submit the form with JavaScript
@@ -28,13 +33,12 @@ module FormTestHelper
       
       # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
       params = ActionController::UrlEncodedPairParser.new(params).result
-      @testcase.make_request(request_method, path, params, self.uri, xhr)
+      @testcase.make_request(request_method, path, params, self.uri, @xhr)
     end
     
     # Submits the form.  Raises an exception if no submit button is present.
     def submit(opts={})
       raise MissingSubmitError, "Submit button not found in form" unless tag.select('input[type="submit"], input[type="image"], button[type="submit"]').any?
-      @xhr = opts.delete(:xhr)
       fields_hash.update(opts)
       submit_without_clicking_button
     end

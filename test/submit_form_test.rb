@@ -108,7 +108,7 @@ class SubmitFormTest < Test::Unit::TestCase
     assert_redirected_to :action => 'rhtml'
   end
   
-  def test_submit_by_xhr_using_a_block
+  def test_submit_form_by_xhr_using_a_block
     render_for_xhr
     new_value = 'brent'
     submit_form :xhr => true do | form |
@@ -243,7 +243,7 @@ class SubmitFormTest < Test::Unit::TestCase
         <%= submit_tag "Maybe", :value => "maybe" %>
       </form>
     EOD
-    form = submit_form "test", :value => "maybe" do |form|
+    form = submit_form "test", :submit_value => "maybe" do |form|
     end
     assert_response :success
     assert_equal value, @controller.params[:username]
@@ -260,7 +260,7 @@ class SubmitFormTest < Test::Unit::TestCase
         <%= submit_tag "Maybe", :value => "maybe" %>
       </form>
     EOD
-    form = submit_form "test", :value => "maybe"
+    form = submit_form "test", :submit_value => "maybe"
     assert_response :success
     assert_equal value, @controller.params[:username]
     assert_equal({"commit"=>"maybe", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)

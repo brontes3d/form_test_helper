@@ -29,7 +29,7 @@ class SelectFormTest < Test::Unit::TestCase
         <input type="submit" value="no" />
       </form>|
     assert_select "form#?", "test"
-    form = select_form "test", :value => "yes"
+    form = select_form "test", :submit_value => "yes"
     assert_equal FormTestHelper::Form, form.class
   end
   
@@ -40,7 +40,7 @@ class SelectFormTest < Test::Unit::TestCase
         <input type="submit" value="No" name="no" /><
       /form>|
     assert_select "form#test"
-    form = select_form "test", :value => "Cancel"
+    form = select_form "test", :submit_value => "Cancel"
     assert_equal FormTestHelper::Form, form.class
     
     assert_raise(Test::Unit::AssertionFailedError) do
@@ -263,7 +263,7 @@ class SelectFormTest < Test::Unit::TestCase
         <%= submit_tag "No", :value => "no" %>
       </form>
     EOD
-    form = select_form "test", :value => "yes"
+    form = select_form "test", :submit_value => "yes"
     form.submit
     assert_response :success
     assert_equal value, @controller.params[:username]
@@ -279,21 +279,23 @@ class SelectFormTest < Test::Unit::TestCase
         <%= submit_tag "No", :value => "no" %>
       </form>
     EOD
-    form = select_form "test", :value => "no"
+    form = select_form "test", :submit_value => "no"
     form.submit
     assert_response :success
     assert_equal value, @controller.params[:username]
     assert_equal({"commit"=>"no", "username"=>value, "action"=>"create", "controller"=>@controller.controller_name}, @controller.params)
   end
     
-  def test_submit_by_xhr
+  def test_submit_by_xhr_without_a_block
     render_for_xhr
-    form = select_form
     new_value = 'brent'
-    form.submit :username => new_value, :xhr => true
+    form = select_form :xhr => true
+    form.username = new_value
+    form.submit
     check_xhr_responses new_value
   end
-      
+    
+          
   def test_text_field
     assert_select_form_works_with "article[name]", "My article" do |name, value|
       text_field_tag name, value
