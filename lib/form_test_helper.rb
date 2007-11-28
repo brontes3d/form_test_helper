@@ -197,6 +197,7 @@ module FormTestHelper
 
     
     protected
+    
     def convert_value(value)
       value.is_a?(Hash) ? FieldsHash.new(value) : value
     end

@@ -1,41 +1,44 @@
 module FormTestHelper
 
   module FormMethods
-    # Returns a form object with the passed in +args+. +args+
-    # can be the text selector, options and a possible block, all
+    # Returns a form object with the passed in +args+, which
+    # can be a text selector, options and/or a possible block. All
     # of which are optional.
     #
     # When given a block the form object will be passed into the
     # the block which can be used to set values on the form. The
     # block will automatically submit the form.
     #
-    # == Options
+    # === Options
     #  * xhr - can be true or false. This sets the type of request to be
     #          made when the form is submitted. default is false
     #  * :submit_value - a string. When selecting a form with multiple submit
     #          buttons this can be used to specify the value of which submit
     #          button to use.
     #
-    # == Examples
+    # === Examples
     #   # select the first form
-    #   select_form
+    #   form = select_form
     #
-    #   # select the form#form_id
-    #   select_form "form_id"
+    #   # select the form with the id 'form_id'
+    #   form = select_form "form_id"
     #
     #   # select form#form_id and tell it that it will make an xhr call
-    #   select_form "form_id", :xhr => true
+    #   form = select_form "form_id", :xhr => true
     #
     #   # select form#form_id and 
-    #   select_form "form_id", :submit_value => "yes"
+    #   form = select_form "form_id", :submit_value => "yes"
     #
     #   # select the first form and tell it that it will make an xhr call
-    #   select_form :xhr => true
+    #   form = select_form :xhr => true
     #
-    #   # selecting a form, setting a value for a field and submitting it
-    #   select_form "form_id" do |form|
-    #     form.user.name = "joe"
-    #   end
+    #   # accesing elements whose HTML names were in a basic format like "name"
+    #   form.name = "joe"
+    #   form.name  # => "joe"
+    #
+    #   # accessing elements whose HTML names were in a format like "user[name]" 
+    #   form.user.name = "joe"
+    #   form.user.name  # => "joe"
     #
     def select_form(*args)
       options = args.extract_options!
@@ -62,6 +65,12 @@ module FormTestHelper
 
     # Alias for select_form when called with a block. 
     # Shortcut for select_form(name).submit(args) without block.
+    #
+    # === Example
+    #   # selecting a form, setting a value for a field and submitting it
+    #   submit_form "form_id" do |form|
+    #     form.user.name = "joe"
+    #   end
     def submit_form(*args, &block)
       if block_given?
         select_form(*args, &block)
