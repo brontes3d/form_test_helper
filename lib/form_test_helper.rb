@@ -1,4 +1,22 @@
 module FormTestHelper
+  
+  def self.pair_parse_nested_params(params)
+    to_return = {}
+    params.each do |key, value|
+      # puts "Asked to convert: #{key} - #{value.to_s}"
+      # if key.to_s == "case_duplication[copy][lab]"
+      #   puts value.inspect
+      #   begin
+      #     raise "test"
+      #   rescue => e
+      #     puts e.backtrace.join("\n")
+      #   end
+      # end
+      Rack::Utils.normalize_params(to_return, key, value)
+    end
+    to_return    
+  end
+  
   module TagProxy
     def method_missing(method, *args)
       if tag.respond_to?(method)
@@ -32,7 +50,8 @@ module FormTestHelper
       fields.each {|field| params[field.name] = field.value unless field.value.nil? || field.value == [] || params[field.name] } # don't submit the nils, empty arrays, and fields already named
       
       # Convert arrays and hashes in param keys, since test processing doesn't do this automatically
-      params = ActionController::UrlEncodedPairParser.new(params).result
+      # params = ActionController::UrlEncodedPairParser.new(params).result
+      params = FormTestHelper.pair_parse_nested_params(params)
       @testcase.make_request(request_method, path, params, self.uri, @xhr)
     end
     
@@ -61,7 +80,14 @@ module FormTestHelper
       return @fields if @fields
       # Input, textarea, select, and button are valid field tags.  Name is a required attribute.
       fields = tag.select('input, textarea, select, button').reject{ |tag| tag['name'].nil? }
+      
+      # puts "field tags: " + fields.collect{|field_tag| field_tag['name'] }.inspect
+      
       @fields = fields.group_by {|field_tag| field_tag['name'] }.collect do |name, field_tags|
+        #hack for when we have: 
+        #   <input name="case_duplication[copy][lab]" type="hidden" value="0" />
+        #   <input checked="checked" id="case_duplication_copy_lab" name="case_duplication[copy][lab]" type="checkbox" value="1" />
+        field_tags.reverse!
         case field_tags.first['type']
         when 'submit'
           field_tags.reject!{ |tag,*| tag['value'] != @submit_value } if @submit_value
@@ -69,7 +95,7 @@ module FormTestHelper
         when 'checkbox'
           FormTestHelper::CheckBox.new(field_tags)
         when 'hidden'
-          FormTestHelper::Hidden.new(field_tags)
+          FormTestHelper::Hidden.new(field_tags)          
         when 'radio'
           FormTestHelper::RadioButtonGroup.new(field_tags)
         else
@@ -87,7 +113,20 @@ module FormTestHelper
     end
     
     def fields_hash
-      @fields_hash ||= FieldsHash.new(ActionController::UrlEncodedPairParser.new(fields.collect {|field| [field.name, field] }).result)
+      # puts "supposed to transform " + fields.collect {|field| [field.name, field.to_s] }.inspect
+      # 
+      # to_return = {}
+      # fields.each do |f|
+      #   Rack::Utils.normalize_params(to_return, f.name, f.to_s)
+      # end
+      # puts "result #{to_return.inspect}"
+      # @fields_hash = FieldsHash.new(to_return)
+      
+      @fields_hash ||=  FieldsHash.new(FormTestHelper.pair_parse_nested_params(fields.collect {|field| [field.name, field] }))
+      
+      # Utils.parse_nested_query()
+      
+      # @fields_hash ||= FieldsHash.new(ActionController::UrlEncodedPairParser.new(fields.collect {|field| [field.name, field] }).result)
     end
     
     # Accepts a block that can work with a single object (group of fields corresponding to a 

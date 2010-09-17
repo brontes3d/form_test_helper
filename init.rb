@@ -5,7 +5,8 @@ if RAILS_ENV == 'test'
     require file
   end
 
-  Test::Unit::TestCase.class_eval do
+  #FIXME_RAILS23 :
+  ActionController::TestCase.class_eval do
       include FormTestHelper::LinkMethods
       include FormTestHelper::FormMethods
       include FormTestHelper::RequestMethods    
